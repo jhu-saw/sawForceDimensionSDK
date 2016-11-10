@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package>
+  <name>force_dimension_ros</name>
+  <version>1.0.0</version>
+  <description>The Force Dimension SDK ROS package</description>
+
+  <maintainer email="anton.deguet@jhu.edu">Anton Deguet</maintainer>
+  <license>cisst</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>saw_force_dimension_sdk</build_depend>
+  <build_depend>cisst_ros_bridge</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>roslib</build_depend>
+
+  <run_depend>saw_force_dimension_sdk</run_depend>
+  <run_depend>cisst_ros_bridge</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>roslib</run_depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+  </export>
+</package>

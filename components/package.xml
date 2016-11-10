@@ -1,0 +1,18 @@
+<package>
+  <name>saw_force_dimension_sdk</name>
+  <version>1.0.0</version>
+  <description>
+  sawForceDimensionSDK
+  </description>
+  <maintainer email="anton.deguet@jhu.edu">Anton Deguet</maintainer>
+  <license>cisst</license>
+  <url>https://github.com/jhu-saw/sawForceDimensionSDK</url>
+
+  <build_depend>cisst</build_depend>
+  <run_depend>cisst</run_depend>
+
+  <export>
+    <build_type>catkin</build_type>
+  </export>
+
+</package>
