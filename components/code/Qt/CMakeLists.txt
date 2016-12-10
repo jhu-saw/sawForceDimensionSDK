@@ -32,24 +32,20 @@ if (cisst_FOUND_AS_REQUIRED)
   include_directories (${CMAKE_CURRENT_BINARY_DIR})
   if (CISST_HAS_QT4)
     qt4_wrap_cpp (SAW_ATRACSYS_FUSION_TRACK_QT_WRAP_CPP
-                  ${sawAtracsysFusionTrack_HEADER_DIR}/mtsAtracsysFusionTrackToolQtWidget.h
-                  ${sawAtracsysFusionTrack_HEADER_DIR}/mtsAtracsysFusionTrackStrayMarkersQtWidget.h)
+                  ${sawForceDimensionSDK_HEADER_DIR}/mtsForceDimensionQtWidget.h)
   else (CISST_HAS_QT4)
     set (CMAKE_AUTOMOC ON)
   endif (CISST_HAS_QT4)
 
-  add_library (sawAtracsysFusionTrackQt
-               ${sawAtracsysFusionTrack_HEADER_DIR}/mtsAtracsysFusionTrackToolQtWidget.h
-               ${sawAtracsysFusionTrack_HEADER_DIR}/mtsAtracsysFusionTrackStrayMarkersQtWidget.h
-               ${sawAtracsysFusionTrack_HEADER_DIR}/sawAtracsysFusionTrackQtExport.h
-               mtsAtracsysFusionTrackToolQtWidget.cpp
-               mtsAtracsysFusionTrackStrayMarkersQtWidget.cpp
+  add_library (sawForceDimensionSDKQt
+               ${sawForceDimensionSDK_HEADER_DIR}/mtsForceDimensionQtWidget.h
+               mtsForceDimensionQtWidget.cpp
                ${SAW_ATRACSYS_FUSION_TRACK_QT_WRAP_CPP})
-  set_property (TARGET sawAtracsysFusionTrackQt PROPERTY FOLDER "sawAtracsysFusionTrack")
-  cisst_target_link_libraries (sawAtracsysFusionTrackQt ${REQUIRED_CISST_LIBRARIES})
+  set_property (TARGET sawForceDimensionSDKQt PROPERTY FOLDER "sawForceDimensionSDK")
+  cisst_target_link_libraries (sawForceDimensionSDKQt ${REQUIRED_CISST_LIBRARIES})
 
   # make sure the new library is known by the parent folder to add to the config file
-  set (sawAtracsysFusionTrackQt_LIBRARIES sawAtracsysFusionTrackQt PARENT_SCOPE)
+  set (sawForceDimensionSDKQt_LIBRARIES sawForceDimensionSDKQt PARENT_SCOPE)
 
 else (cisst_FOUND_AS_REQUIRED)
   message ("Information: code will not be compiled, it requires ${REQUIRED_CISST_LIBRARIES}")

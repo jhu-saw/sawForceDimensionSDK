@@ -20,68 +20,11 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawForceDimensionSDK/mtsForceDimensionSDK.h>
 
+#include <dhdc.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsForceDimensionSDK, mtsTaskContinuous, mtsTaskContinuousConstructorArg);
 
-class mtsForceDimensionSDKTool
-{
-public:
-    mtsForceDimensionSDKTool(const std::string & name) :
-        Name(name),
-        Interface(0),
-        StateTable(500, name)
-    {}
-
-    ~mtsForceDimensionSDKTool(void) {}
-
-    std::string Name;
-    mtsInterfaceProvided * Interface;
-    prmPositionCartesianGet Position;
-    double RegistrationError;
-    mtsStateTable StateTable;
-};
-
-class mtsForceDimensionSDKInternals
-{
-public:
-    mtsForceDimensionSDKInternals(const size_t numberOfMarkers = 32) :
-        NumberOfMarkers(numberOfMarkers),
-        Library(0),
-        Device(0LL)
-    {
-        //memset(&Frame, 0, sizeof(ftkFrameQuery));
-        Frame = ftkCreateFrame();
-        Markers = new ftkMarker[NumberOfMarkers];
-        Frame->markers = Markers;
-        Frame->markersVersionSize.ReservedSize = sizeof(ftkMarker) * NumberOfMarkers;
-        Frame->threeDFiducials = threedFiducials;
-        Frame->threeDFiducialsVersionSize.ReservedSize = sizeof (threedFiducials);
-
-    };
-
-    size_t NumberOfMarkers;
-    ftkLibrary Library;
-    uint64 Device;
-    ftkFrameQuery * Frame;
-    ftkMarker * Markers;
-    ftk3DFiducial threedFiducials[100u];
-    bool Configured;
-
-    typedef std::map<uint32, mtsForceDimensionSDKTool *> GeometryIdToToolMap;
-    GeometryIdToToolMap GeometryIdToTool;
-};
-
-
-void mtsForceDimensionSDKDeviceEnum(uint64 device, void * user, ftkDeviceType type)
-{
-    uint64 * lastDevice = reinterpret_cast<uint64 *>(user);
-    if (lastDevice) {
-        *lastDevice = device;
-    }
-}
-
-
-void mtsForceDimensionSDK::Construct(void)
+void mtsForceDimensionSDK::Init(void)
 {
     Internals = new mtsForceDimensionSDKInternals();
 

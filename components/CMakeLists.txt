@@ -44,38 +44,39 @@ if (cisst_FOUND_AS_REQUIRED)
   # this should be replaced by a find ForceDimensionSDK
   set (force_dimension_sdk_FOUND 0)
   if (WIN32)
+    message ("this needs to be implemented for Windows")
     # Windows
-    set (force_dimension_sdk_DIR "C:/Program Files/Force_dimension_sdk/Passive Tracking SDK")
-    include_directories (${force_dimension_sdk_DIR}/include
-                         ${force_dimension_sdk_DIR}/bin)
-    link_directories (${force_dimension_sdk_DIR}/bin)
-    set (force_dimension_sdk_LIBRARIES winmm fusionTrack64.lib)
-    set (force_dimension_sdk_FOUND 1)
+    # set (force_dimension_sdk_DIR "C:/Program Files/Force_dimension_sdk/Passive Tracking SDK")
+    # include_directories (${force_dimension_sdk_DIR}/include
+    #                      ${force_dimension_sdk_DIR}/bin)
+    # link_directories (${force_dimension_sdk_DIR}/bin)
+    # set (force_dimension_sdk_LIBRARIES winmm fusionTrack64.lib)
+    # set (force_dimension_sdk_FOUND 1)
     # Linux
   elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     find_path (force_dimension_sdk_DIR
-               NAMES "ftkInterface.h"
-               PATH_SUFFIXES "src/include")
-    if (EXISTS "${force_dimension_sdk_DIR}/src/include/ftkInterface.h")
+               NAMES "dhdc.h"
+               PATH_SUFFIXES "include")
+    if (EXISTS "${force_dimension_sdk_DIR}/include/dhdc.h")
       set (force_dimension_sdk_FOUND 1)
       include_directories (${force_dimension_sdk_DIR}/src/include)
       # libraries
-      link_directories (${force_dimension_sdk_DIR}/bin)
-      set (force_dimension_sdk_LIBRARIES pthread rt fusionTrack64 device64)
+      link_directories (${force_dimension_sdk_DIR}/lib/release/lin-x86_64)
+      set (force_dimension_sdk_LIBRARIES dhd drd)
       # copy the binary provided for fusionTrack in cisst/saw library directory
-      find_library (force_dimension_sdk_LIBRARY_fusionTrack
-                    NAMES fusionTrack64
-                    PATHS ${force_dimension_sdk_DIR}/bin)
-      find_library (force_dimension_sdk_LIBRARY_device
-                    NAMES device64
-                    PATHS ${force_dimension_sdk_DIR}/bin)
+      find_library (force_dimension_sdk_LIBRARY_DHD
+                    NAMES dhd
+                    PATHS ${force_dimension_sdk_DIR}/lib/release/lin-x86_64)
+      find_library (force_dimension_sdk_LIBRARY_DRD
+                    NAMES drd
+                    PATHS ${force_dimension_sdk_DIR}/lib/release/lin-x86_64)
       file (MAKE_DIRECTORY ${LIBRARY_OUTPUT_PATH})
-      file (COPY ${force_dimension_sdk_LIBRARY_fusionTrack} ${force_dimension_sdk_LIBRARY_device}
+      file (COPY ${force_dimension_sdk_LIBRARY_DHD} ${force_dimension_sdk_LIBRARY_DRD}
             DESTINATION ${LIBRARY_OUTPUT_PATH})
     endif ()
   else (WIN32)
     # Everything else
-    set (force_dimension_sdk_LIBRARIES pthread rt fusionTrack64)
+    message ("this needs to be implemented for Mac")
   endif (WIN32)
 
   # if we found the actracsys SDK
@@ -89,7 +90,7 @@ if (cisst_FOUND_AS_REQUIRED)
 
     # Set the version number
     set (sawForceDimensionSDK_VERSION_MAJOR "1")
-    set (sawForceDimensionSDK_VERSION_MINOR "1")
+    set (sawForceDimensionSDK_VERSION_MINOR "0")
     set (sawForceDimensionSDK_VERSION_PATCH "0")
     set (sawForceDimensionSDK_VERSION "${sawForceDimensionSDK_VERSION_MAJOR}.${sawForceDimensionSDK_VERSION_MINOR}.${sawForceDimensionSDK_VERSION_PATCH}")
 
@@ -102,8 +103,8 @@ if (cisst_FOUND_AS_REQUIRED)
 
     add_library (sawForceDimensionSDK
                  ${sawForceDimensionSDK_HEADER_DIR}/sawForceDimensionSDKExport.h
-                 code/mtsForceDimensionSDK.cpp
-                 ${sawForceDimensionSDK_HEADER_DIR}/mtsForceDimensionSDK.h)
+                 code/mtsForceDimension.cpp
+                 ${sawForceDimensionSDK_HEADER_DIR}/mtsForceDimension.h)
     set_property (TARGET sawForceDimensionSDK PROPERTY FOLDER "sawForceDimensionSDK")
     cisst_target_link_libraries (sawForceDimensionSDK ${REQUIRED_CISST_LIBRARIES})
     target_link_libraries (sawForceDimensionSDK ${force_dimension_sdk_LIBRARIES})
