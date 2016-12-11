@@ -1,6 +1,8 @@
 # sawForceDimensionSDK
 SAW wrapper for Force Dimension haptic devices
 
+The Force Dimension SDK can be downloaded from the manufacturer's web site: http://www.forcedimension.com/download/sdk
+
 # Linux permissions
 
 The following instructions allow to avoid using `sudo` to access the USB device.  We use a `udev` rule to set the permission and optionally an owner/group.  The following example simply allows anyone to read/write using the permissions 666.
