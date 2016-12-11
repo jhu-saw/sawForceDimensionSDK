@@ -1,6 +1,37 @@
 # sawForceDimensionSDK
 SAW wrapper for Force Dimension haptic devices
 
+# Linux permissions
+
+The following instructions allow to avoid using `sudo` to access the USB device.  We use a `udev` rule to set the permission and optionally an owner/group.  The following example simply allows anyone to read/write using the permissions 666.
+
+Using `dmesg`, we can find the vendor Id right afer the device is turned on:
+```sh
+[478324.211029] usb 2-1.5: Product: omega.x haptic device
+[478324.211033] usb 2-1.5: Manufacturer: FD 3.0
+[478385.766668] usb 2-1.5: USB disconnect, device number 23
+[478392.620604] usb 2-1.5: new high-speed USB device number 24 using ehci-pci
+[478393.276357] usb 2-1.5: New USB device found, idVendor=1451, idProduct=0402
+[478393.276360] usb 2-1.5: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+```
+
+We can then create a rule to allow all to read/write on any device with vendor Id = 1451:
+```sh
+# become superuser
+sudo su -
+```
+then create rule:
+```sh
+# go to udev rules directory
+cd /etc/udev/rules.d/
+# create a file with new rule
+echo "SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"1451\", MODE=\"0666\"" > 80-usb-force-dimension.rules
+# restart udev
+udevadm control --reload-rules
+```
+
+Once this is done, test the provided examples in the SDK `bin` folder.  You should be able to run them without `sudo`. 
+
 # ROS/Catkin build tools
 
 This is by far the simplest solution to compile and run the examples on Linux.
