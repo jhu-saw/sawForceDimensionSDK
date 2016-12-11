@@ -20,9 +20,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnUnits.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <cisstMultiTask/mtsTaskManager.h>
-#include <sawForceDimensionSDK/mtsForceDimensionSDK.h>
-#include <sawForceDimensionSDK/mtsForceDimensionSDKToolQtWidget.h>
-#include <sawForceDimensionSDK/mtsForceDimensionSDKStrayMarkersQtWidget.h>
+#include <sawForceDimensionSDK/mtsForceDimension.h>
+#include <sawForceDimensionSDK/mtsForceDimensionQtWidget.h>
 
 #include <ros/ros.h>
 #include <cisst_ros_bridge/mtsROSBridge.h>
@@ -64,12 +63,12 @@ int main(int argc, char * argv[])
     std::cout << "Options provided:" << std::endl << arguments << std::endl;
 
     // create the components
-    mtsForceDimensionSDK * tracker = new mtsForceDimensionSDK("FusionTrack");
-    tracker->Configure(jsonConfigFile);
+    mtsForceDimension * device = new mtsForceDimension("Device");
+    device->Configure(jsonConfigFile);
 
     // add the components to the component manager
     mtsManagerLocal * componentManager = mtsComponentManager::GetInstance();
-    componentManager->AddComponent(tracker);
+    componentManager->AddComponent(device);
 
     // ROS bridge
     mtsROSBridge * rosBridge = new mtsROSBridge("ForceDimensionBridge", rosPeriod, true);
@@ -80,53 +79,30 @@ int main(int argc, char * argv[])
     // organize all widgets in a tab widget
     QTabWidget * tabWidget = new QTabWidget;
 
-    // stray markers
-    mtsForceDimensionSDKStrayMarkersQtWidget * strayMarkersWidget;
-    strayMarkersWidget = new mtsForceDimensionSDKStrayMarkersQtWidget("StrayMarkers-GUI");
-    strayMarkersWidget->Configure();
-    componentManager->AddComponent(strayMarkersWidget);
-    componentManager->Connect(strayMarkersWidget->GetName(), "Controller",
-                              tracker->GetName(), "Controller");
-    tabWidget->addTab(strayMarkersWidget, "Stray Markers");
-
-    // tools
-    std::string toolName;
-    mtsForceDimensionSDKToolQtWidget * toolWidget;
+    // device
+    mtsForceDimensionQtWidget * deviceWidget;
 
     // configure all components
-    for (size_t tool = 0; tool < tracker->GetNumberOfTools(); tool++) {
-        toolName = tracker->GetToolName(tool);
-        // ROS publisher
-        std::string topicName = toolName;
-        std::replace(topicName.begin(), topicName.end(), '-', '_');
-        rosBridge->AddPublisherFromCommandRead<prmPositionCartesianGet, geometry_msgs::PoseStamped>
-            (toolName, "GetPositionCartesian",
-             "/force_dimension/" + topicName);
-        // Qt Widget
-        toolWidget = new mtsForceDimensionSDKToolqtwidget(toolName + "-GUI");
-        toolWidget->Configure();
-        componentManager->AddComponent(toolWidget);
-        componentManager->Connect(toolWidget->GetName(), "Tool",
-                                  tracker->GetName(), toolName);
-        tabWidget->addTab(toolWidget, toolName.c_str());
-    }
 
-    // add ROS bridge for stray markers
-    rosBridge->AddPublisherFromCommandRead<std::vector<vct3>, sensor_msgs::PointCloud>
-        ("Controller", "GetThreeDFiducialPosition",
-         "/force_dimension/fiducials");
+    // ROS publisher
+    std::string topicName = "omega";
+    std::replace(topicName.begin(), topicName.end(), '-', '_');
+    rosBridge->AddPublisherFromCommandRead<prmPositionCartesianGet, geometry_msgs::PoseStamped>
+        ("Device", "GetPositionCartesian",
+         "/force_dimension/" + topicName);
+
+    // Qt Widget
+    deviceWidget = new mtsForceDimensionQtWidget("device-gui");
+    deviceWidget->Configure();
+    componentManager->AddComponent(deviceWidget);
+    componentManager->Connect(deviceWidget->GetName(), "Device",
+                              device->GetName(), "Device");
+    tabWidget->addTab(deviceWidget, "device");
 
     // add the bridge after all interfaces have been created
     componentManager->AddComponent(rosBridge);
-
-    // connect all interfaces for the ROS bridge
-    for (size_t tool = 0; tool < tracker->GetNumberOfTools(); tool++) {
-        toolName = tracker->GetToolName(tool);
-        componentManager->Connect(rosBridge->GetName(), toolName,
-                                  tracker->GetName(), toolName);
-    }
-    componentManager->Connect(rosBridge->GetName(), "Controller",
-                              tracker->GetName(), "Controller");
+    componentManager->Connect(rosBridge->GetName(), "Device",
+                              device->GetName(), "Device");
 
     // create and start all components
     componentManager->CreateAllAndWait(5.0 * cmn_s);

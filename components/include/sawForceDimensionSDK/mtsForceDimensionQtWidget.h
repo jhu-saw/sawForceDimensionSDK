@@ -16,9 +16,8 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-
-#ifndef _mtsAtracsysFusionTrackToolQtWidget_h
-#define _mtsAtracsysFusionTrackToolQtWidget_h
+#ifndef _mtsForceDimensionQtWidget_h
+#define _mtsForceDimensionQtWidget_h
 
 #include <cisstMultiTask/mtsComponent.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
@@ -29,16 +28,16 @@ http://www.cisst.org/cisst/license.txt.
 #include <QLabel>
 
 // Always include last
-#include <sawAtracsysFusionTrack/sawAtracsysFusionTrackQtExport.h>
+#include <sawForceDimensionSDK/sawForceDimensionSDKQtExport.h>
 
-class CISST_EXPORT mtsAtracsysFusionTrackToolQtWidget : public QWidget, public mtsComponent
+class CISST_EXPORT mtsForceDimensionQtWidget : public QWidget, public mtsComponent
 {
     Q_OBJECT;
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    mtsAtracsysFusionTrackToolQtWidget(const std::string & componentName, double periodInSeconds = 50.0 * cmn_ms);
-    ~mtsAtracsysFusionTrackToolQtWidget() {}
+    mtsForceDimensionQtWidget(const std::string & componentName, double periodInSeconds = 50.0 * cmn_ms);
+    ~mtsForceDimensionQtWidget() {}
 
     void Configure(const std::string & filename = "");
     void Startup(void);
@@ -56,25 +55,22 @@ private:
     int TimerPeriodInMilliseconds;
 
 protected:
-    struct ToolStruct {
+    struct {
         mtsFunctionRead GetPositionCartesian;
-        mtsFunctionRead GetRegistrationError;
         mtsFunctionRead GetPeriodStatistics;
-    } Tool;
+    } Device;
 
 private:
     prmPositionCartesianGet PositionCartesian;
-    double RegistrationError;
 
     vctQtWidgetFrameDoubleRead * QFRPositionCartesianWidget;
-    QLabel * QLValid;
-    QLabel * QLRegistrationError;
+    QLabel * QLGripperAngle;
 
     // Timing
     mtsIntervalStatistics IntervalStatistics;
     mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
 };
 
-CMN_DECLARE_SERVICES_INSTANTIATION(mtsAtracsysFusionTrackToolQtWidget);
+CMN_DECLARE_SERVICES_INSTANTIATION(mtsForceDimensionQtWidget);
 
-#endif // _mtsAtracsysFusionTrackToolQtWidget_h
+#endif // _mtsForceDimensionQtWidget_h

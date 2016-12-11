@@ -16,82 +16,67 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef _mtsAtracsysFusionTrack_h
-#define _mtsAtracsysFusionTrack_h
+#ifndef _mtsForceDimension_h
+#define _mtsForceDimension_h
 
 #include <cisstCommon/cmnPath.h>
 #include <cisstMultiTask/mtsTaskContinuous.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
+#include <cisstParameterTypes/prmPositionCartesianSet.h>
+#include <cisstParameterTypes/prmForceCartesianGet.h>
+#include <cisstParameterTypes/prmForceCartesianSet.h>
 
 #include <json/json.h> // in order to read config file
 
-#include <sawAtracsysFusionTrack/sawAtracsysFusionTrackExport.h>  // always include last
+#include <sawForceDimensionSDK/sawForceDimensionSDKExport.h>  // always include last
 
-// forward declarations for internal data
-class mtsAtracsysFusionTrackInternals;
-class mtsAtracsysFusionTrackTool;
-
-/*!
-  \todo Create InitLibrary method and call it in Configure or AddTool is not already done
-  \todo Add flag to check if ftkInit has been called and then check in AddTool and Startup, report error if not
-  \todo Add method AddTool to add tool from geometry as std::vector<vct3> + geometry Id
-  \todo Use method AddTool in AddToolIni
-  \todo Can this thing beep on command?
-*/
-class CISST_EXPORT mtsAtracsysFusionTrack: public mtsTaskContinuous
+class CISST_EXPORT mtsForceDimension: public mtsTaskContinuous
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
  public:
-    inline mtsAtracsysFusionTrack(const std::string & componentName):
+    inline mtsForceDimension(const std::string & componentName):
         mtsTaskContinuous(componentName, 100) {
-        Construct();
+        Init();
     }
 
-    inline mtsAtracsysFusionTrack(const mtsTaskContinuousConstructorArg & arg):
+    inline mtsForceDimension(const mtsTaskContinuousConstructorArg & arg):
         mtsTaskContinuous(arg) {
-        Construct();
+        Init();
     }
 
-    ~mtsAtracsysFusionTrack(void) {};
+    ~mtsForceDimension(void) {};
 
-    /*! Configure the device.  If the method is called without a file
-      name (or an empty string), this method initializes the hardware.
-      Users will have to call the AddToolInit later to add tools.  If
-      a file name is provided, the methods assumes it corresponds to a
-      JSON file containing an array of "tools", each of them being
-      defined by a "name" and an "ini-file".  The path for the ini
-      file can be either absolute or relative to the application's
-      working directory. */
     void Configure(const std::string & filename = "");
-
     void Startup(void);
-
     void Run(void);
-
     void Cleanup(void);
-
-    bool AddToolIni(const std::string & toolName, const std::string & fileName);
-
-    inline size_t GetNumberOfTools(void) const {
-        return Tools.size();
-    }
-
-    std::string GetToolName(const size_t index) const;
 
 protected:
 
     /*! Code called by all constructors. */
-    void Construct(void);
+    void Init(void);
 
-    mtsAtracsysFusionTrackInternals * Internals;
-    typedef cmnNamedMap<mtsAtracsysFusionTrackTool> ToolsType;
-    ToolsType Tools;
+    /*! Command to set wrench */
+    void SetForceTorqueCartesian(const prmForceCartesianSet & desiredForceTorque);
 
-    int NumberOfThreeDFiducials;
-    std::vector<vct3> ThreeDFiducialPosition;
+    /*! Command to set position */
+    void SetPositionCartesian(const prmForceCartesianSet & desiredForceTorque);
+
+    struct {
+        int Major;
+        int Minor;
+        int Release;
+        int Revision;
+    } mSDKVersion;
+
+    int mNumberOfDevices;
+    char mDeviceId;
+    std::string mSystemName;
+    prmPositionCartesianGet mPositionCartesian;
+    prmForceCartesianGet mForceTorqueCartesian;
 };
 
-CMN_DECLARE_SERVICES_INSTANTIATION(mtsAtracsysFusionTrack);
+CMN_DECLARE_SERVICES_INSTANTIATION(mtsForceDimension);
 
-#endif  // _mtsAtracsysFusionTrack_h
+#endif  // _mtsForceDimension_h

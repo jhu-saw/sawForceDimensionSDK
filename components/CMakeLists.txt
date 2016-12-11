@@ -59,10 +59,10 @@ if (cisst_FOUND_AS_REQUIRED)
                PATH_SUFFIXES "include")
     if (EXISTS "${force_dimension_sdk_DIR}/include/dhdc.h")
       set (force_dimension_sdk_FOUND 1)
-      include_directories (${force_dimension_sdk_DIR}/src/include)
+      include_directories (${force_dimension_sdk_DIR}/include)
       # libraries
       link_directories (${force_dimension_sdk_DIR}/lib/release/lin-x86_64)
-      set (force_dimension_sdk_LIBRARIES dhd drd)
+      set (force_dimension_sdk_LIBRARIES dhd drd usb-1.0)
       # copy the binary provided for fusionTrack in cisst/saw library directory
       find_library (force_dimension_sdk_LIBRARY_DHD
                     NAMES dhd
@@ -107,7 +107,6 @@ if (cisst_FOUND_AS_REQUIRED)
                  ${sawForceDimensionSDK_HEADER_DIR}/mtsForceDimension.h)
     set_property (TARGET sawForceDimensionSDK PROPERTY FOLDER "sawForceDimensionSDK")
     cisst_target_link_libraries (sawForceDimensionSDK ${REQUIRED_CISST_LIBRARIES})
-    target_link_libraries (sawForceDimensionSDK ${force_dimension_sdk_LIBRARIES})
 
     # add Qt code
     if (CISST_HAS_QT)

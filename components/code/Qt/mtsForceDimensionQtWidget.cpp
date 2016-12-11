@@ -22,50 +22,50 @@ http://www.cisst.org/cisst/license.txt.
 // Qt include
 #include <QString>
 #include <QtGui>
+#include <QMessageBox>
 
 // cisst
 #include <cisstMultiTask/mtsInterfaceRequired.h>
-#include <sawAtracsysFusionTrack/mtsAtracsysFusionTrackToolQtWidget.h>
+#include <sawForceDimensionSDK/mtsForceDimensionQtWidget.h>
 
-CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsAtracsysFusionTrackToolQtWidget, mtsComponent, std::string);
+CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsForceDimensionQtWidget, mtsComponent, std::string);
 
-mtsAtracsysFusionTrackToolQtWidget::mtsAtracsysFusionTrackToolQtWidget(const std::string & componentName, double periodInSeconds):
+mtsForceDimensionQtWidget::mtsForceDimensionQtWidget(const std::string & componentName, double periodInSeconds):
     mtsComponent(componentName),
     TimerPeriodInMilliseconds(periodInSeconds)
 {
     // Setup CISST Interface
-    mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Tool");
+    mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Device");
     if (interfaceRequired) {
-        interfaceRequired->AddFunction("GetPositionCartesian", Tool.GetPositionCartesian);
-        interfaceRequired->AddFunction("GetRegistrationError", Tool.GetRegistrationError);
-        interfaceRequired->AddFunction("GetPeriodStatistics", Tool.GetPeriodStatistics);
+        interfaceRequired->AddFunction("GetPositionCartesian", Device.GetPositionCartesian);
+        interfaceRequired->AddFunction("GetPeriodStatistics", Device.GetPeriodStatistics);
     }
     setupUi();
     startTimer(TimerPeriodInMilliseconds); // ms
 }
 
-void mtsAtracsysFusionTrackToolQtWidget::Configure(const std::string &filename)
+void mtsForceDimensionQtWidget::Configure(const std::string &filename)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << filename << std::endl;
 }
 
-void mtsAtracsysFusionTrackToolQtWidget::Startup(void)
+void mtsForceDimensionQtWidget::Startup(void)
 {
-    CMN_LOG_CLASS_INIT_VERBOSE << "mtsAtracsysFusionTrackToolQtWidget::Startup" << std::endl;
+    CMN_LOG_CLASS_INIT_VERBOSE << "mtsForceDimensionQtWidget::Startup" << std::endl;
     if (!parent()) {
         show();
     }
 }
 
-void mtsAtracsysFusionTrackToolQtWidget::Cleanup(void)
+void mtsForceDimensionQtWidget::Cleanup(void)
 {
     this->hide();
-    CMN_LOG_CLASS_INIT_VERBOSE << "mtsAtracsysFusionTrackToolQtWidget::Cleanup" << std::endl;
+    CMN_LOG_CLASS_INIT_VERBOSE << "mtsForceDimensionQtWidget::Cleanup" << std::endl;
 }
 
-void mtsAtracsysFusionTrackToolQtWidget::closeEvent(QCloseEvent * event)
+void mtsForceDimensionQtWidget::closeEvent(QCloseEvent * event)
 {
-    int answer = QMessageBox::warning(this, tr("mtsAtracsysFusionTrackToolQtWidget"),
+    int answer = QMessageBox::warning(this, tr("mtsForceDimensionQtWidget"),
                                       tr("Do you really want to quit this application?"),
                                       QMessageBox::No | QMessageBox::Yes);
     if (answer == QMessageBox::Yes) {
@@ -76,7 +76,7 @@ void mtsAtracsysFusionTrackToolQtWidget::closeEvent(QCloseEvent * event)
     }
 }
 
-void mtsAtracsysFusionTrackToolQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
+void mtsForceDimensionQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
 {
     // make sure we should update the display
     if (this->isHidden()) {
@@ -84,29 +84,19 @@ void mtsAtracsysFusionTrackToolQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(eve
     }
 
     mtsExecutionResult executionResult;
-    executionResult = Tool.GetPositionCartesian(PositionCartesian);
+    executionResult = Device.GetPositionCartesian(PositionCartesian);
     if (!executionResult) {
-        CMN_LOG_CLASS_RUN_ERROR << "Tool.GetPositionCartesian failed, \""
+        CMN_LOG_CLASS_RUN_ERROR << ".GetPositionCartesian failed, \""
                                 << executionResult << "\"" << std::endl;
     }
     else {
         QFRPositionCartesianWidget->SetValue(PositionCartesian.Position());
-        QLValid->setNum(PositionCartesian.Valid());
     }
-
-    executionResult = Tool.GetRegistrationError(RegistrationError);
-    if (!executionResult) {
-        CMN_LOG_CLASS_RUN_ERROR << "Tool.GetRegistrationError failed, \""
-                                << executionResult << "\"" << std::endl;
-    }
-    else {
-        QLRegistrationError->setNum(RegistrationError);
-    }
-    Tool.GetPeriodStatistics(IntervalStatistics);
+    Device.GetPeriodStatistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
 }
 
-void mtsAtracsysFusionTrackToolQtWidget::setupUi(void)
+void mtsForceDimensionQtWidget::setupUi(void)
 {
     QVBoxLayout * mainLayout = new QVBoxLayout;
 
@@ -131,16 +121,12 @@ void mtsAtracsysFusionTrackToolQtWidget::setupUi(void)
 
     gridLayout->setSpacing(1);
     int row = 0;
-    gridLayout->addWidget(new QLabel("Valid"), row, 0);
-    QLValid = new QLabel();
-    gridLayout->addWidget(QLValid, row, 1);
-    row++;
-    gridLayout->addWidget(new QLabel("Registration Error"), row, 0);
-    QLRegistrationError = new QLabel();
-    gridLayout->addWidget(QLRegistrationError, row, 1);
+    gridLayout->addWidget(new QLabel("Gripper"), row, 0);
+    QLGripperAngle = new QLabel();
+    gridLayout->addWidget(QLGripperAngle, row, 1);
     row++;
 
     setLayout(mainLayout);
-    setWindowTitle("Tool");
+    setWindowTitle("Device");
     resize(sizeHint());
 }
