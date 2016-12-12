@@ -1,5 +1,5 @@
 # sawForceDimensionSDK
-SAW wrapper for Force Dimension haptic devices
+SAW wrapper for Force Dimension haptic devices - this is a proof of concept, use at your own risks.
 
 The Force Dimension SDK can be downloaded from the manufacturer's web site: http://www.forcedimension.com/download/sdk
 
@@ -46,14 +46,14 @@ adeguet1@lcsr-qla:~/catkin_ws$ cmake-gui build_release/saw_force_dimension_sdk
 ```
 In the command above, the ROS workspace is `~/catkin_ws` and the build tree is `build_release`.  You might have `devel` or `devel_debug` depending on your workspace configuration.
 
-Once in CMake, locate `force_dimension_sdk_DIR` and make it point to the directory containing your SDK.  TO BE UPDATED:   For example, `~/fusionTrack_v2.3_gcc-4.7`.  Hit configure once and the two variables `atracsys_LIBRARY_device` and `atracsys_LIBRARY_fusionTrack` should have been found automatically.
+Once in CMake, locate `force_dimension_sdk_DIR` and make it point to the directory containing your SDK.  For example, `~/ForceDimension/sdk-3.6.0`.  Hit configure once and the two variables `force_dimension_sdk_LIBRARY_DHD` and `force_dimension_sdk_LIBRARY_DRD` should have been found automatically.
 
 Don't forget to hit "Generate" before quitting CMake.  You should now be able to build using `catkin build --force-cmake`.   The option `--force-cmake` is required to force CMake to run for all packages that depends on the `sawForceDimensionSDK` package.
 
 Once the packages are all built, you must first refresh your ROS environment using `source ~/catkin_ws/devel_release/setup.bash`.
 
 ```sh
-sawForceDimensionSDKQtExample -j config003.json
+sawForceDimensionSDKQtExample
 ```
 
 If you also want ROS topics corresponding to the tracked tools, try:
