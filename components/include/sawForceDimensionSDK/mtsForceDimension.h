@@ -23,6 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsTaskContinuous.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
+#include <cisstParameterTypes/prmVelocityCartesianGet.h>
 #include <cisstParameterTypes/prmForceCartesianGet.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 
@@ -57,11 +58,23 @@ protected:
     /*! Code called by all constructors. */
     void Init(void);
 
-    /*! Command to set wrench */
-    void SetForceTorqueCartesian(const prmForceCartesianSet & desiredForceTorque);
+    void SetRobotControlState(const std::string & state);
+    void GetRobotControlState(std::string & state) const;
+    std::string mArmState;
 
-    /*! Command to set position */
     void SetPositionCartesian(const prmForceCartesianSet & desiredForceTorque);
+    void SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition);
+    void SetWrenchBody(const prmForceCartesianSet & newForce);
+    void SetGravityCompensation(const bool & gravityCompensation);
+    void LockOrientation(const vctMatRot3 & orientation);
+    void UnlockOrientation(void);
+
+    struct {
+        mtsFunctionWrite Status;
+        mtsFunctionWrite Warning;
+        mtsFunctionWrite Error;
+        mtsFunctionWrite RobotState;
+    } MessageEvents;
 
     struct {
         int Major;
@@ -73,8 +86,13 @@ protected:
     int mNumberOfDevices;
     char mDeviceId;
     std::string mSystemName;
+
     prmPositionCartesianGet mPositionCartesian;
+    prmVelocityCartesianGet mVelocityCartesian;
     prmForceCartesianGet mForceTorqueCartesian;
+
+    double mPositionGripper;
+    vctMatRot3 mRotationOffset;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsForceDimension);

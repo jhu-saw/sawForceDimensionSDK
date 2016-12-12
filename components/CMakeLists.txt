@@ -66,10 +66,10 @@ if (cisst_FOUND_AS_REQUIRED)
       # copy the binary provided for fusionTrack in cisst/saw library directory
       find_library (force_dimension_sdk_LIBRARY_DHD
                     NAMES dhd
-                    PATHS ${force_dimension_sdk_DIR}/lib/release/lin-x86_64)
+                    PATHS ${force_dimension_sdk_DIR}/lib/release/lin-x86_64-gcc)
       find_library (force_dimension_sdk_LIBRARY_DRD
                     NAMES drd
-                    PATHS ${force_dimension_sdk_DIR}/lib/release/lin-x86_64)
+                    PATHS ${force_dimension_sdk_DIR}/lib/release/lin-x86_64-gcc)
       file (MAKE_DIRECTORY ${LIBRARY_OUTPUT_PATH})
       file (COPY ${force_dimension_sdk_LIBRARY_DHD} ${force_dimension_sdk_LIBRARY_DRD}
             DESTINATION ${LIBRARY_OUTPUT_PATH})

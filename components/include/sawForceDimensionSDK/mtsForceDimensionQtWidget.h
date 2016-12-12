@@ -57,14 +57,16 @@ private:
 protected:
     struct {
         mtsFunctionRead GetPositionCartesian;
+        mtsFunctionRead GetGripperPosition;
         mtsFunctionRead GetPeriodStatistics;
     } Device;
 
 private:
     prmPositionCartesianGet PositionCartesian;
+    double PositionGripper;
 
     vctQtWidgetFrameDoubleRead * QFRPositionCartesianWidget;
-    QLabel * QLGripperAngle;
+    QLabel * QLPositionGripper;
 
     // Timing
     mtsIntervalStatistics IntervalStatistics;

@@ -85,12 +85,23 @@ int main(int argc, char * argv[])
     // configure all components
 
     // ROS publisher
-    std::string topicName = "omega";
-    std::replace(topicName.begin(), topicName.end(), '-', '_');
+    std::string deviceName = "omega";
     rosBridge->AddPublisherFromCommandRead<prmPositionCartesianGet, geometry_msgs::PoseStamped>
         ("Device", "GetPositionCartesian",
-         "/force_dimension/" + topicName);
+         "/force_dimension/" + deviceName + "/position_cartesian_current");
 
+    rosBridge->AddPublisherFromCommandRead<prmVelocityCartesianGet, geometry_msgs::TwistStamped>
+        ("Device", "GetVelocityCartesian",
+         "/force_dimension/" + deviceName + "/twist_body_current");
+
+    rosBridge->AddPublisherFromCommandRead<prmForceCartesianGet, geometry_msgs::WrenchStamped>
+        ("Device", "GetForceTorqueCartesian",
+         "/force_dimension/" + deviceName + "/wrench_body_current");
+
+    rosBridge->AddPublisherFromCommandRead<double, std_msgs::Float32>
+        ("Device", "GetGripperPosition",
+         "/force_dimension/" + deviceName + "/gripper_position_current");    
+    
     // Qt Widget
     deviceWidget = new mtsForceDimensionQtWidget("device-gui");
     deviceWidget->Configure();

@@ -27,18 +27,53 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsForceDimension, mtsTaskContinuous, mtsT
 
 void mtsForceDimension::Init(void)
 {
+    mArmState = "DVRK_POSITION_GOAL_CARTESIAN";
+    
     mNumberOfDevices = 0;
 
-
+    StateTable.AddData(mArmState, "ArmState");
     StateTable.AddData(mPositionCartesian, "PositionCartesian");
+    StateTable.AddData(mVelocityCartesian, "VelocityCartesian");
     StateTable.AddData(mForceTorqueCartesian, "ForceTorqueCartesian");
-
+    StateTable.AddData(mPositionGripper, "PositionGripper");
+    
     mtsInterfaceProvided * provided = AddInterfaceProvided("Device");
     if (provided) {
         provided->AddCommandReadState(StateTable, mPositionCartesian,
                                       "GetPositionCartesian");
+        provided->AddCommandReadState(StateTable, mPositionCartesian,
+                                      "GetPositionCartesianDesired");
+        provided->AddCommandReadState(StateTable, mVelocityCartesian,
+                                      "GetVelocityCartesian");
         provided->AddCommandReadState(StateTable, mForceTorqueCartesian,
                                       "GetForceTorqueCartesian");
+        provided->AddCommandReadState(StateTable, mPositionGripper,
+                                      "GetGripperPosition");
+
+        provided->AddCommandWrite(&mtsForceDimension::SetPositionGoalCartesian,
+                                  this, "SetPositionGoalCartesian");
+        provided->AddCommandWrite(&mtsForceDimension::SetWrenchBody,
+                                  this, "SetWrenchBody");
+        provided->AddCommandWrite(&mtsForceDimension::SetGravityCompensation,
+                                  this, "SetGravityCompensation");
+        provided->AddCommandWrite(&mtsForceDimension::LockOrientation,
+                                  this, "LockOrientation");
+        provided->AddCommandVoid(&mtsForceDimension::UnlockOrientation,
+                                 this, "UnlockOrientation");
+
+        // robot State
+        provided->AddCommandWrite(&mtsForceDimension::SetRobotControlState,
+                                  this, "SetRobotControlState", std::string(""));
+        provided->AddCommandReadState(StateTable, mArmState,
+                                      "GetRobotControlState");
+        
+        // human readable messages
+        provided->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
+        provided->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
+        provided->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
+        provided->AddEventWrite(MessageEvents.RobotState, "RobotState", std::string(""));
+
+        // stats
         provided->AddCommandReadState(StateTable, StateTable.PeriodStats,
                                       "GetPeriodStatistics");
     }
@@ -60,20 +95,19 @@ void mtsForceDimension::Configure(const std::string & filename)
                                << mSDKVersion.Minor << "."
                                << mSDKVersion.Release << "."
                                << mSDKVersion.Revision << std::endl;
-    std::cerr << "Configure: using SDK "
-              << mSDKVersion.Major << "."
-              << mSDKVersion.Minor << "."
-              << mSDKVersion.Release << "."
-              << mSDKVersion.Revision << std::endl;
 
     // required to change asynchronous operation mode
     dhdEnableExpertMode();
 
+    std::string message;
+    
     // open the first available device
     if (drdOpen() < 0) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure: can't open device, drdOpen returned: "
-                                 << dhdErrorGetLastStr()
+        message = this->GetName() + ": can't open device, drdOpen returned: "
+            + dhdErrorGetLastStr();
+        CMN_LOG_CLASS_INIT_ERROR << message
                                  << std::endl;
+        MessageEvents.Error(message);                            
         return;
     }
 
@@ -92,8 +126,8 @@ void mtsForceDimension::Configure(const std::string & filename)
         }
     }
 
-        // dhdEnableForce(DHD_ON);
-        // dhdSetGravityCompensation(DHD_ON);
+    dhdEnableForce(DHD_ON);
+    dhdSetGravityCompensation(DHD_ON);
 }
 
 
@@ -110,15 +144,77 @@ void mtsForceDimension::Run(void)
 
     // replace by loop to handle multiple devices
     double rotation[3][3];
+    vctMatRot3 vctRotation;
     if (mNumberOfDevices > 0) {
+        // position
         dhdGetPositionAndOrientationFrame(&mPositionCartesian.Position().Translation().X(),
                                           &mPositionCartesian.Position().Translation().Y(),
                                           &mPositionCartesian.Position().Translation().Z(),
                                           rotation);
+        vctRotation.Row(0).Assign(rotation[0]);
+        vctRotation.Row(1).Assign(rotation[1]);
+        vctRotation.Row(2).Assign(rotation[2]);
+        mPositionCartesian.Position().Rotation() = mRotationOffset * vctRotation;
+
+        // velocity
+        dhdGetLinearVelocity(&mVelocityCartesian.VelocityLinear().X(),
+                             &mVelocityCartesian.VelocityLinear().Y(),
+                             &mVelocityCartesian.VelocityLinear().Z());
+        dhdGetAngularVelocityRad(&mVelocityCartesian.VelocityAngular().X(),
+                                 &mVelocityCartesian.VelocityAngular().Y(),
+                                 &mVelocityCartesian.VelocityAngular().Z());
+
+        // force
+        dhdGetForceAndTorque(&mForceTorqueCartesian.Force()[0],
+                             &mForceTorqueCartesian.Force()[1],
+                             &mForceTorqueCartesian.Force()[2],
+                             &mForceTorqueCartesian.Force()[3],
+                             &mForceTorqueCartesian.Force()[4],
+                             &mForceTorqueCartesian.Force()[5]);
+
+        // gripper
+        dhdGetGripperAngleRad(&mPositionGripper);
     }
 }
 
 void mtsForceDimension::Cleanup(void)
 {
     drdClose();
+}
+
+void mtsForceDimension::SetRobotControlState(const std::string & state)
+{
+    mArmState = state;
+    MessageEvents.RobotState(std::string(state));
+}
+
+void mtsForceDimension::SetWrenchBody(const prmForceCartesianSet & wrench)
+{
+    dhdSetForce(wrench.Force().X(),
+                wrench.Force().Y(),
+                wrench.Force().Z());
+}
+
+void mtsForceDimension::SetPositionGoalCartesian(const prmPositionCartesianSet & position)
+{
+    std::cerr << CMN_LOG_DETAILS << " SetPositionGoalCartesian not implemented" << std::endl;
+}
+
+void mtsForceDimension::UnlockOrientation(void)
+{
+    mRotationOffset = vctMatRot3();
+}
+
+void mtsForceDimension::LockOrientation(const vctMatRot3 & orientation)
+{
+    mRotationOffset = orientation * mPositionCartesian.Position().Rotation().Inverse();
+}
+
+void mtsForceDimension::SetGravityCompensation(const bool & gravity)
+{
+    if (gravity) {
+        dhdSetGravityCompensation(DHD_ON);
+    } else {
+        dhdSetGravityCompensation(DHD_OFF);
+    }
 }

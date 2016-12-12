@@ -38,6 +38,7 @@ mtsForceDimensionQtWidget::mtsForceDimensionQtWidget(const std::string & compone
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Device");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian", Device.GetPositionCartesian);
+        interfaceRequired->AddFunction("GetGripperPosition", Device.GetGripperPosition);
         interfaceRequired->AddFunction("GetPeriodStatistics", Device.GetPeriodStatistics);
     }
     setupUi();
@@ -92,6 +93,10 @@ void mtsForceDimensionQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     else {
         QFRPositionCartesianWidget->SetValue(PositionCartesian.Position());
     }
+
+    executionResult = Device.GetGripperPosition(PositionGripper);
+    QLPositionGripper->setNum(PositionGripper * cmn180_PI);
+
     Device.GetPeriodStatistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
 }
@@ -122,8 +127,8 @@ void mtsForceDimensionQtWidget::setupUi(void)
     gridLayout->setSpacing(1);
     int row = 0;
     gridLayout->addWidget(new QLabel("Gripper"), row, 0);
-    QLGripperAngle = new QLabel();
-    gridLayout->addWidget(QLGripperAngle, row, 1);
+    QLPositionGripper = new QLabel();
+    gridLayout->addWidget(QLPositionGripper, row, 1);
     row++;
 
     setLayout(mainLayout);
