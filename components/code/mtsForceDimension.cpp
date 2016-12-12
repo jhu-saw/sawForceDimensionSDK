@@ -59,6 +59,8 @@ void mtsForceDimension::Init(void)
                                   this, "LockOrientation");
         provided->AddCommandVoid(&mtsForceDimension::UnlockOrientation,
                                  this, "UnlockOrientation");
+        provided->AddCommandVoid(&mtsForceDimension::Freeze,
+                                 this, "Freeze");
 
         // robot State
         provided->AddCommandWrite(&mtsForceDimension::SetRobotControlState,
@@ -124,15 +126,13 @@ void mtsForceDimension::Configure(const std::string & filename)
                                      << std::endl;
         }
     }
-
-    dhdEnableForce(DHD_ON);
-    dhdSetGravityCompensation(DHD_ON);
 }
 
 
 void mtsForceDimension::Startup(void)
 {
     CMN_LOG_CLASS_RUN_ERROR << "Startup" << std::endl;
+    dhdSetGravityCompensation(DHD_ON);
 }
 
 
@@ -143,17 +143,18 @@ void mtsForceDimension::Run(void)
 
     // replace by loop to handle multiple devices
     double rotation[3][3];
-    vctMatRot3 vctRotation;
     if (mNumberOfDevices > 0) {
         // position
         dhdGetPositionAndOrientationFrame(&mPositionCartesian.Position().Translation().X(),
                                           &mPositionCartesian.Position().Translation().Y(),
                                           &mPositionCartesian.Position().Translation().Z(),
                                           rotation);
-        vctRotation.Row(0).Assign(rotation[0]);
-        vctRotation.Row(1).Assign(rotation[1]);
-        vctRotation.Row(2).Assign(rotation[2]);
-        mPositionCartesian.Position().Rotation() = mRotationOffset * vctRotation;
+        mRawOrientation.Row(0).Assign(rotation[0]);
+        mRawOrientation.Row(1).Assign(rotation[1]);
+        mRawOrientation.Row(2).Assign(rotation[2]);
+        mPositionCartesian.Position().Rotation() = mRotationOffset;
+        //        mPositionCartesian.Position().Rotation() = mRawOrientation * mRotationOffset;
+        mPositionCartesian.Valid() = true;
 
         // velocity
         dhdGetLinearVelocity(&mVelocityCartesian.VelocityLinear().X(),
@@ -173,6 +174,7 @@ void mtsForceDimension::Run(void)
 
         // gripper
         dhdGetGripperAngleRad(&mPositionGripper);
+        mPositionGripper *= -1.0;
     }
 }
 
@@ -201,17 +203,28 @@ void mtsForceDimension::SetWrenchBody(const prmForceCartesianSet & wrench)
 
 void mtsForceDimension::SetPositionGoalCartesian(const prmPositionCartesianSet & position)
 {
-    std::cerr << CMN_LOG_DETAILS << " SetPositionGoalCartesian not implemented" << std::endl;
+    mRotationOffset = position.Goal().Rotation();
+    //     mRotationOffset = mRawOrientation.Inverse() * position.Goal().Rotation();
+    std::cerr << "LockOrientation" << std::endl
+              << "Current: " << std::endl
+              << mRawOrientation << std::endl
+              << "Desired: " << std::endl
+              << position.Goal().Rotation() << std::endl
+              << "Offset: " << std::endl
+              << mRotationOffset << std::endl;
 }
 
 void mtsForceDimension::UnlockOrientation(void)
 {
-    mRotationOffset = vctMatRot3();
+    // mRotationOffset = vctMatRot3();
+}
+
+void mtsForceDimension::Freeze(void)
+{
 }
 
 void mtsForceDimension::LockOrientation(const vctMatRot3 & orientation)
 {
-    mRotationOffset = orientation * mPositionCartesian.Position().Rotation().Inverse();
 }
 
 void mtsForceDimension::SetGravityCompensation(const bool & gravity)

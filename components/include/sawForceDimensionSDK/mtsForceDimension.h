@@ -68,6 +68,7 @@ protected:
     void SetGravityCompensation(const bool & gravityCompensation);
     void LockOrientation(const vctMatRot3 & orientation);
     void UnlockOrientation(void);
+    void Freeze(void);
 
     struct {
         mtsFunctionWrite Status;
@@ -92,7 +93,7 @@ protected:
     prmForceCartesianGet mForceTorqueCartesian;
 
     double mPositionGripper;
-    vctMatRot3 mRotationOffset;
+    vctMatRot3 mRotationOffset, mRawOrientation;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsForceDimension);
