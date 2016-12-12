@@ -16,13 +16,13 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
+
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnUnits.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <cisstMultiTask/mtsTaskManager.h>
-#include <sawForceDimensionSDK/mtsForceDimensionSDK.h>
-#include <sawForceDimensionSDK/mtsForceDimensionSDKToolQtWidget.h>
-#include <sawForceDimensionSDK/mtsForceDimensionSDKStrayMarkersQtWidget.h>
+#include <sawForceDimensionSDK/mtsForceDimension.h>
+#include <sawForceDimensionSDK/mtsForceDimensionQtWidget.h>
 
 #include <QApplication>
 #include <QMainWindow>
@@ -57,12 +57,12 @@ int main(int argc, char * argv[])
     std::cout << "Options provided:" << std::endl << arguments << std::endl;
 
     // create the components
-    mtsForceDimensionSDK * tracker = new mtsForceDimensionSDK("FusionTrack");
-    tracker->Configure(jsonConfigFile);
+    mtsForceDimension * device = new mtsForceDimension("Device");
+    device->Configure(jsonConfigFile);
 
     // add the components to the component manager
     mtsManagerLocal * componentManager = mtsComponentManager::GetInstance();
-    componentManager->AddComponent(tracker);
+    componentManager->AddComponent(device);
 
     // create a Qt user interface
     QApplication application(argc, argv);
@@ -70,27 +70,16 @@ int main(int argc, char * argv[])
     // organize all widgets in a tab widget
     QTabWidget * tabWidget = new QTabWidget;
 
-    // stray markers
-    mtsForceDimensionSDKStrayMarkersQtWidget * strayMarkersWidget;
-    strayMarkersWidget = new mtsForceDimensionSDKStrayMarkersQtWidget("StrayMarkers-GUI");
-    strayMarkersWidget->Configure();
-    componentManager->AddComponent(strayMarkersWidget);
-    componentManager->Connect(strayMarkersWidget->GetName(), "Controller",
-                              tracker->GetName(), "Controller");
-    tabWidget->addTab(strayMarkersWidget, "Stray Markers");
+    // device
+    mtsForceDimensionQtWidget * deviceWidget;
 
-    // tools
-    std::string toolName;
-    mtsForceDimensionSDKToolQtWidget * toolWidget;
-    for (size_t tool = 0; tool < tracker->GetNumberOfTools(); tool++) {
-        toolName = tracker->GetToolName(tool);
-        toolWidget = new mtsForceDimensionSDKToolQtWidget(toolName + "-GUI");
-        toolWidget->Configure();
-        componentManager->AddComponent(toolWidget);
-        componentManager->Connect(toolWidget->GetName(), "Tool",
-                                  tracker->GetName(), toolName);
-        tabWidget->addTab(toolWidget, toolName.c_str());
-    }
+    // Qt Widget
+    deviceWidget = new mtsForceDimensionQtWidget("device-gui");
+    deviceWidget->Configure();
+    componentManager->AddComponent(deviceWidget);
+    componentManager->Connect(deviceWidget->GetName(), "Device",
+                              device->GetName(), "Robot");
+    tabWidget->addTab(deviceWidget, "device");
 
     // create and start all components
     componentManager->CreateAllAndWait(5.0 * cmn_s);

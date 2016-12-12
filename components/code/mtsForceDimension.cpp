@@ -28,16 +28,15 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsForceDimension, mtsTaskContinuous, mtsT
 void mtsForceDimension::Init(void)
 {
     mArmState = "DVRK_POSITION_GOAL_CARTESIAN";
-    
+
     mNumberOfDevices = 0;
 
-    StateTable.AddData(mArmState, "ArmState");
     StateTable.AddData(mPositionCartesian, "PositionCartesian");
     StateTable.AddData(mVelocityCartesian, "VelocityCartesian");
     StateTable.AddData(mForceTorqueCartesian, "ForceTorqueCartesian");
     StateTable.AddData(mPositionGripper, "PositionGripper");
-    
-    mtsInterfaceProvided * provided = AddInterfaceProvided("Device");
+
+    mtsInterfaceProvided * provided = AddInterfaceProvided("Robot");
     if (provided) {
         provided->AddCommandReadState(StateTable, mPositionCartesian,
                                       "GetPositionCartesian");
@@ -64,9 +63,9 @@ void mtsForceDimension::Init(void)
         // robot State
         provided->AddCommandWrite(&mtsForceDimension::SetRobotControlState,
                                   this, "SetRobotControlState", std::string(""));
-        provided->AddCommandReadState(StateTable, mArmState,
-                                      "GetRobotControlState");
-        
+        provided->AddCommandRead(&mtsForceDimension::GetRobotControlState,
+                                 this, "GetRobotControlState", std::string(""));
+
         // human readable messages
         provided->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
         provided->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
@@ -100,14 +99,14 @@ void mtsForceDimension::Configure(const std::string & filename)
     dhdEnableExpertMode();
 
     std::string message;
-    
+
     // open the first available device
     if (drdOpen() < 0) {
         message = this->GetName() + ": can't open device, drdOpen returned: "
             + dhdErrorGetLastStr();
         CMN_LOG_CLASS_INIT_ERROR << message
                                  << std::endl;
-        MessageEvents.Error(message);                            
+        MessageEvents.Error(message);
         return;
     }
 
@@ -186,6 +185,11 @@ void mtsForceDimension::SetRobotControlState(const std::string & state)
 {
     mArmState = state;
     MessageEvents.RobotState(std::string(state));
+}
+
+void mtsForceDimension::GetRobotControlState(std::string & state) const
+{
+    state = mArmState;
 }
 
 void mtsForceDimension::SetWrenchBody(const prmForceCartesianSet & wrench)

@@ -107,13 +107,13 @@ int main(int argc, char * argv[])
     deviceWidget->Configure();
     componentManager->AddComponent(deviceWidget);
     componentManager->Connect(deviceWidget->GetName(), "Device",
-                              device->GetName(), "Device");
+                              device->GetName(), "Robot");
     tabWidget->addTab(deviceWidget, "device");
 
     // add the bridge after all interfaces have been created
     componentManager->AddComponent(rosBridge);
     componentManager->Connect(rosBridge->GetName(), "Device",
-                              device->GetName(), "Device");
+                              device->GetName(), "Robot");
 
     // create and start all components
     componentManager->CreateAllAndWait(5.0 * cmn_s);
