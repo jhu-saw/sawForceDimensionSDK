@@ -17,8 +17,12 @@ Using `dmesg`, we can find the vendor Id right afer the device is turned on:
 [478393.276360] usb 2-1.5: New USB device strings: Mfr=1, Product=2, SerialNumber=0
 ```
 
-We can then create a rule to allow all to read/write on any device with vendor Id = 1451:
+For a Novint Falcon, the vendor Id might be different.  For example:
 ```sh
+[2674365.004455] usb 1-1.4: New USB device found, idVendor=0403, idProduct=cb48
+[2674365.004464] usb 1-1.4: Product: FALCON HAPTIC
+```
+
 # become superuser
 sudo su -
 ```
@@ -26,8 +30,9 @@ then create rule:
 ```sh
 # go to udev rules directory
 cd /etc/udev/rules.d/
-# create a file with new rule
+# create files with new rules
 echo "SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"1451\", MODE=\"0666\"" > 80-usb-force-dimension.rules
+echo "SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"0403\", MODE=\"0666\"" > 80-usb-novint.rules
 # restart udev
 udevadm control --reload-rules
 ```
