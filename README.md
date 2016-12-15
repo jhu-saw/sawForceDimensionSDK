@@ -23,7 +23,8 @@ For a Novint Falcon, the vendor Id might be different.  For example:
 [2674365.004464] usb 1-1.4: Product: FALCON HAPTIC
 ```
 
-# become superuser
+Become superuser
+```sh
 sudo su -
 ```
 then create rule:
