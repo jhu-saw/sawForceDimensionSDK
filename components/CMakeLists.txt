@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2016 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -36,7 +36,8 @@ if (cisst_FOUND_AS_REQUIRED)
   if (sawForceDimensionSDK_IS_CATKIN_BUILT)
     set (sawForceDimensionSDK_CONFIG_FILE_DIR
          "${CATKIN_DEVEL_PREFIX}/share/sawForceDimensionSDK/cmake")
-    set (LIBRARY_OUTPUT_PATH "${sawForceDimensionSDK_BINARY_DIR}/lib")
+    set (EXECUTABLE_OUTPUT_PATH "${CATKIN_DEVEL_PREFIX}/bin")
+    set (LIBRARY_OUTPUT_PATH    "${CATKIN_DEVEL_PREFIX}/lib")
   else ()
     set (sawForceDimensionSDK_CONFIG_FILE_DIR "${sawForceDimensionSDK_BINARY_DIR}")
   endif ()
@@ -106,6 +107,11 @@ if (cisst_FOUND_AS_REQUIRED)
                  code/mtsForceDimension.cpp
                  ${sawForceDimensionSDK_HEADER_DIR}/mtsForceDimension.h)
     set_property (TARGET sawForceDimensionSDK PROPERTY FOLDER "sawForceDimensionSDK")
+
+    target_link_libraries (sawForceDimensionSDK
+                           ${force_dimension_sdk_LIBRARY_DHD}
+                           ${force_dimension_sdk_LIBRARY_DRD}
+                           usb-1.0)
     cisst_target_link_libraries (sawForceDimensionSDK ${REQUIRED_CISST_LIBRARIES})
 
     # add Qt code
