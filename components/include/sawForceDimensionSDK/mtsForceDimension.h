@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2014-07-17
 
-  (C) Copyright 2014-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -37,7 +37,7 @@ class CISST_EXPORT mtsForceDimension: public mtsTaskContinuous
 
  public:
     inline mtsForceDimension(const std::string & componentName):
-        mtsTaskContinuous(componentName, 100) {
+        mtsTaskContinuous(componentName, 256) {
         Init();
     }
 
@@ -71,11 +71,9 @@ protected:
     void Freeze(void);
 
     struct {
-        mtsFunctionWrite Status;
-        mtsFunctionWrite Warning;
-        mtsFunctionWrite Error;
         mtsFunctionWrite RobotState;
     } MessageEvents;
+    mtsInterfaceProvided * mInterface;
 
     struct {
         int Major;

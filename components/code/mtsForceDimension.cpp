@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-11-10
 
-  (C) Copyright 2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -36,47 +36,45 @@ void mtsForceDimension::Init(void)
     StateTable.AddData(mForceTorqueCartesian, "ForceTorqueCartesian");
     StateTable.AddData(mPositionGripper, "PositionGripper");
 
-    mtsInterfaceProvided * provided = AddInterfaceProvided("Robot");
-    if (provided) {
-        provided->AddCommandReadState(StateTable, mPositionCartesian,
-                                      "GetPositionCartesian");
-        provided->AddCommandReadState(StateTable, mPositionCartesian,
-                                      "GetPositionCartesianDesired");
-        provided->AddCommandReadState(StateTable, mVelocityCartesian,
-                                      "GetVelocityCartesian");
-        provided->AddCommandReadState(StateTable, mForceTorqueCartesian,
-                                      "GetForceTorqueCartesian");
-        provided->AddCommandReadState(StateTable, mPositionGripper,
-                                      "GetGripperPosition");
+    mInterface = AddInterfaceProvided("Robot");
+    if (mInterface) {
+        mInterface->AddMessageEvents();
+        mInterface->AddCommandReadState(StateTable, mPositionCartesian,
+                                        "GetPositionCartesian");
+        mInterface->AddCommandReadState(StateTable, mPositionCartesian,
+                                        "GetPositionCartesianDesired");
+        mInterface->AddCommandReadState(StateTable, mVelocityCartesian,
+                                        "GetVelocityCartesian");
+        mInterface->AddCommandReadState(StateTable, mForceTorqueCartesian,
+                                        "GetForceTorqueCartesian");
+        mInterface->AddCommandReadState(StateTable, mPositionGripper,
+                                        "GetGripperPosition");
 
-        provided->AddCommandWrite(&mtsForceDimension::SetPositionGoalCartesian,
-                                  this, "SetPositionGoalCartesian");
-        provided->AddCommandWrite(&mtsForceDimension::SetWrenchBody,
-                                  this, "SetWrenchBody");
-        provided->AddCommandWrite(&mtsForceDimension::SetGravityCompensation,
-                                  this, "SetGravityCompensation");
-        provided->AddCommandWrite(&mtsForceDimension::LockOrientation,
-                                  this, "LockOrientation");
-        provided->AddCommandVoid(&mtsForceDimension::UnlockOrientation,
-                                 this, "UnlockOrientation");
-        provided->AddCommandVoid(&mtsForceDimension::Freeze,
-                                 this, "Freeze");
+        mInterface->AddCommandWrite(&mtsForceDimension::SetPositionGoalCartesian,
+                                    this, "SetPositionGoalCartesian");
+        mInterface->AddCommandWrite(&mtsForceDimension::SetWrenchBody,
+                                    this, "SetWrenchBody");
+        mInterface->AddCommandWrite(&mtsForceDimension::SetGravityCompensation,
+                                    this, "SetGravityCompensation");
+        mInterface->AddCommandWrite(&mtsForceDimension::LockOrientation,
+                                    this, "LockOrientation");
+        mInterface->AddCommandVoid(&mtsForceDimension::UnlockOrientation,
+                                   this, "UnlockOrientation");
+        mInterface->AddCommandVoid(&mtsForceDimension::Freeze,
+                                   this, "Freeze");
 
         // robot State
-        provided->AddCommandWrite(&mtsForceDimension::SetRobotControlState,
-                                  this, "SetRobotControlState", std::string(""));
-        provided->AddCommandRead(&mtsForceDimension::GetRobotControlState,
-                                 this, "GetRobotControlState", std::string(""));
+        mInterface->AddCommandWrite(&mtsForceDimension::SetRobotControlState,
+                                    this, "SetRobotControlState", std::string(""));
+        mInterface->AddCommandRead(&mtsForceDimension::GetRobotControlState,
+                                   this, "GetRobotControlState", std::string(""));
 
-        // human readable messages
-        provided->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
-        provided->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
-        provided->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
-        provided->AddEventWrite(MessageEvents.RobotState, "RobotState", std::string(""));
+        // events
+        mInterface->AddEventWrite(MessageEvents.RobotState, "RobotState", std::string(""));
 
         // stats
-        provided->AddCommandReadState(StateTable, StateTable.PeriodStats,
-                                      "GetPeriodStatistics");
+        mInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
+                                        "GetPeriodStatistics");
     }
 }
 
@@ -106,9 +104,7 @@ void mtsForceDimension::Configure(const std::string & filename)
     if (drdOpen() < 0) {
         message = this->GetName() + ": can't open device, drdOpen returned: "
             + dhdErrorGetLastStr();
-        CMN_LOG_CLASS_INIT_ERROR << message
-                                 << std::endl;
-        MessageEvents.Error(message);
+        mInterface->SendError(message);
         return;
     }
 
@@ -121,9 +117,8 @@ void mtsForceDimension::Configure(const std::string & filename)
 
     if (!drdIsInitialized()) {
         if (drdAutoInit() < 0) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: auto init failed: "
-                                     << dhdErrorGetLastStr()
-                                     << std::endl;
+            message = this->GetName() + ": failed to auto init, last reported error is: "
+                + dhdErrorGetLastStr();
         }
     }
 }
