@@ -181,7 +181,8 @@ void mtsForceDimension::Cleanup(void)
 void mtsForceDimension::SetRobotControlState(const std::string & state)
 {
     mArmState = state;
-    MessageEvents.RobotState(std::string(state));
+    MessageEvents.RobotState(state);
+    mInterface->SendStatus(this->GetName() + ": state is now " + state);
 }
 
 void mtsForceDimension::GetRobotControlState(std::string & state) const
