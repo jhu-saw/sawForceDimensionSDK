@@ -49,8 +49,7 @@ if (cisst_FOUND_AS_REQUIRED)
   file (MAKE_DIRECTORY "${CATKIN_DEVEL_PREFIX}/include")
 
   catkin_package (INCLUDE_DIRS "${CATKIN_DEVEL_PREFIX}/include"
-                  CATKIN_DEPENDS cisst_ros_bridge geometry_msgs roscpp std_msgs
-                  DEPENDS ${REQUIRED_CISST_LIBRARIES})
+                  CATKIN_DEPENDS cisst_ros_bridge geometry_msgs roscpp std_msgs)
 
   # sawForceDimensionSDK has been compiled within cisst, we should find it automatically
   find_package (sawForceDimensionSDK 1.0.0)
