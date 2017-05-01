@@ -34,7 +34,8 @@ void mtsForceDimension::Init(void)
     StateTable.AddData(mPositionCartesian, "PositionCartesian");
     StateTable.AddData(mVelocityCartesian, "VelocityCartesian");
     StateTable.AddData(mForceTorqueCartesian, "ForceTorqueCartesian");
-    StateTable.AddData(mPositionGripper, "PositionGripper");
+    mStateGripper.Position().SetSize(1);
+    StateTable.AddData(mStateGripper, "StateGripper");
 
     mInterface = AddInterfaceProvided("Robot");
     if (mInterface) {
@@ -47,8 +48,8 @@ void mtsForceDimension::Init(void)
                                         "GetVelocityCartesian");
         mInterface->AddCommandReadState(StateTable, mForceTorqueCartesian,
                                         "GetForceTorqueCartesian");
-        mInterface->AddCommandReadState(StateTable, mPositionGripper,
-                                        "GetGripperPosition");
+        mInterface->AddCommandReadState(StateTable, mStateGripper,
+                                        "GetStateGripper");
 
         mInterface->AddCommandWrite(&mtsForceDimension::SetPositionGoalCartesian,
                                     this, "SetPositionGoalCartesian");
@@ -108,6 +109,13 @@ void mtsForceDimension::Configure(const std::string & filename)
         return;
     }
 
+    if (drdCheckInit() < 0) {
+       drdStop();
+       message = this->GetName() + ": device initialization check failed, drdCheckInit returned: " + dhdErrorGetLastStr();
+       mInterface->SendError(message);
+       return;
+    }
+
     // identify device
     mSystemName = dhdGetSystemName();
     CMN_LOG_CLASS_INIT_VERBOSE << "Configure: found system " << mSystemName << std::endl;
@@ -127,7 +135,9 @@ void mtsForceDimension::Configure(const std::string & filename)
 void mtsForceDimension::Startup(void)
 {
     CMN_LOG_CLASS_RUN_ERROR << "Startup" << std::endl;
-    dhdSetGravityCompensation(DHD_ON);
+    drdStop(true);
+    dhdSetForceAndTorqueAndGripperForce(0.0, 0.0, 0.0,
+                                        0.0, 0.0, 0.0, 0.0);
 }
 
 
@@ -168,8 +178,11 @@ void mtsForceDimension::Run(void)
                              &mForceTorqueCartesian.Force()[5]);
 
         // gripper
-        dhdGetGripperAngleRad(&mPositionGripper);
-        mPositionGripper *= -1.0;
+        dhdGetGripperAngleRad(&mStateGripper.Position().at(0));
+        mStateGripper.Position().at(0) *= -1.0;
+
+    dhdSetForceAndTorqueAndGripperForce(0.0, 0.0, 0.0,
+                                        0.0, 0.0, 0.0, 0.0);
     }
 }
 
@@ -226,8 +239,9 @@ void mtsForceDimension::LockOrientation(const vctMatRot3 & orientation)
 void mtsForceDimension::SetGravityCompensation(const bool & gravity)
 {
     if (gravity) {
-        dhdSetGravityCompensation(DHD_ON);
+        dhdSetForceAndTorqueAndGripperForce(0.0, 0.0, 0.0,
+                                            0.0, 0.0, 0.0, 0.0);
     } else {
-        dhdSetGravityCompensation(DHD_OFF);
+
     }
 }

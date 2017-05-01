@@ -26,6 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmVelocityCartesianGet.h>
 #include <cisstParameterTypes/prmForceCartesianGet.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
+#include <cisstParameterTypes/prmStateJoint.h>
 
 #include <json/json.h> // in order to read config file
 
@@ -90,7 +91,7 @@ protected:
     prmVelocityCartesianGet mVelocityCartesian;
     prmForceCartesianGet mForceTorqueCartesian;
 
-    double mPositionGripper;
+    prmStateJoint mStateGripper;
     vctMatRot3 mRotationOffset, mRawOrientation;
 };
 
