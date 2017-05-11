@@ -113,7 +113,6 @@ void mtsForceDimension::Configure(const std::string & filename)
        drdStop();
        message = this->GetName() + ": device initialization check failed, drdCheckInit returned: " + dhdErrorGetLastStr();
        mInterface->SendError(message);
-       return;
     }
 
     // identify device
