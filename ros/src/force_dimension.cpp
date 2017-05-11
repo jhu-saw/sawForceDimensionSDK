@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-11-10
 
-  (C) Copyright 2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -98,10 +98,10 @@ int main(int argc, char * argv[])
         ("Device", "GetForceTorqueCartesian",
          "/force_dimension/" + deviceName + "/wrench_body_current");
 
-    rosBridge->AddPublisherFromCommandRead<double, std_msgs::Float32>
-        ("Device", "GetGripperPosition",
-         "/force_dimension/" + deviceName + "/gripper_position_current");    
-    
+    rosBridge->AddPublisherFromCommandRead<prmStateJoint, sensor_msgs::JointState>
+        ("Device", "GetStateGripper",
+         "/force_dimension/" + deviceName + "/state_gripper_current");
+
     // Qt Widget
     deviceWidget = new mtsForceDimensionQtWidget("device-gui");
     deviceWidget->Configure();

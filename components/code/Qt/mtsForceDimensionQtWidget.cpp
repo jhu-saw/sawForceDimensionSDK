@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2014-07-21
 
-  (C) Copyright 2014-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -38,7 +38,7 @@ mtsForceDimensionQtWidget::mtsForceDimensionQtWidget(const std::string & compone
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Device");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian", Device.GetPositionCartesian);
-        interfaceRequired->AddFunction("GetGripperPosition", Device.GetGripperPosition);
+        interfaceRequired->AddFunction("GetStateGripper", Device.GetStateGripper);
         interfaceRequired->AddFunction("GetPeriodStatistics", Device.GetPeriodStatistics);
     }
     setupUi();
@@ -94,8 +94,8 @@ void mtsForceDimensionQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
         QFRPositionCartesianWidget->SetValue(PositionCartesian.Position());
     }
 
-    executionResult = Device.GetGripperPosition(PositionGripper);
-    QLPositionGripper->setNum(PositionGripper * cmn180_PI);
+    executionResult = Device.GetStateGripper(StateGripper);
+    QLPositionGripper->setNum(StateGripper.Position().at(0) * cmn180_PI);
 
     Device.GetPeriodStatistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);

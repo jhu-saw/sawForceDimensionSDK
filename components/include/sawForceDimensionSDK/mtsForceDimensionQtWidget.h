@@ -21,6 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstMultiTask/mtsComponent.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
+#include <cisstParameterTypes/prmStateJoint.h>
 #include <cisstVector/vctQtWidgetFrame.h>
 #include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
 
@@ -57,13 +58,13 @@ private:
 protected:
     struct {
         mtsFunctionRead GetPositionCartesian;
-        mtsFunctionRead GetGripperPosition;
+        mtsFunctionRead GetStateGripper;
         mtsFunctionRead GetPeriodStatistics;
     } Device;
 
 private:
     prmPositionCartesianGet PositionCartesian;
-    double PositionGripper;
+    prmStateJoint StateGripper;
 
     vctQtWidgetFrameDoubleRead * QFRPositionCartesianWidget;
     QLabel * QLPositionGripper;
