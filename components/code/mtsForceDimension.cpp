@@ -28,7 +28,8 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsForceDimension, mtsTaskContinuous, mtsT
 void mtsForceDimension::Init(void)
 {
     mArmState = "DVRK_POSITION_GOAL_CARTESIAN";
-    mControlMode = CARTESIAN_POSITION;
+    mNewPositionGoal = false;
+    mControlMode = UNDEFINED;
 
     mDesiredWrench.Force().SetAll(0.0);
     mDesiredEffortGripper = 0.0;
@@ -145,16 +146,19 @@ void mtsForceDimension::Startup(void)
 {
     CMN_LOG_CLASS_RUN_ERROR << "Startup" << std::endl;
     drdStop(true);
+
+    // update current state
+    GetRobotData();
+
+    // freeze in position
+    SetControlMode(CARTESIAN_POSITION);
 }
 
 
-void mtsForceDimension::Run(void)
+void mtsForceDimension::GetRobotData(void)
 {
-    // process mts commands
-    ProcessQueuedCommands();
-
-    // replace by loop to handle multiple devices
     double rotation[3][3];
+    // to be replaced by loop to handle multiple devices
     if (mNumberOfDevices > 0) {
         // position
         dhdGetPositionAndOrientationFrame(&mPositionCartesian.Position().Translation().X(),
@@ -194,7 +198,19 @@ void mtsForceDimension::Run(void)
         // gripper
         dhdGetGripperAngleRad(&mStateGripper.Position().at(0));
         mStateGripper.Position().at(0) *= mGripperDirection;
+    }
+}
 
+void mtsForceDimension::Run(void)
+{
+    // process mts commands
+    ProcessQueuedCommands();
+
+    // get robot data
+    GetRobotData();
+
+    // replace by loop to handle multiple devices
+    if (mNumberOfDevices > 0) {
         // control mode
         switch (mControlMode) {
         case CARTESIAN_EFFORT:
@@ -207,6 +223,13 @@ void mtsForceDimension::Run(void)
                                                 mGripperDirection * mDesiredEffortGripper);
             break;
         case CARTESIAN_POSITION:
+            if (mNewPositionGoal) {
+                drdMoveToPos(mDesiredPosition.Goal().Translation().X(),
+                             mDesiredPosition.Goal().Translation().Y(),
+                             mDesiredPosition.Goal().Translation().Z(),
+                             false);
+                mNewPositionGoal = false;
+            }
             break;
         default:
             break;
@@ -231,14 +254,49 @@ void mtsForceDimension::GetRobotControlState(std::string & state) const
     state = mArmState;
 }
 
+void mtsForceDimension::SetControlMode(const ControlModeType & mode)
+{
+    // return if we are already in this mode
+    if (mode == mControlMode) {
+        return;
+    }
+    // transition to new mode
+    switch (mode) {
+    case CARTESIAN_POSITION:
+        mNewPositionGoal = false;
+        drdRegulatePos(true);
+        drdRegulateRot(false);
+        drdRegulateGrip(false);
+        drdStart();
+        // start from current position
+        mDesiredPosition.Goal().Assign(mPositionCartesian.Position());
+        mNewPositionGoal = true;
+        break;
+    case CARTESIAN_EFFORT:
+        drdRegulatePos(false);
+        drdStop(true);
+        // start with 0 forces
+        mDesiredWrench.Force().SetAll(0.0);
+        break;
+    default:
+        break;
+    }
+    // assign mode
+    mControlMode = mode;
+}
+
 void mtsForceDimension::SetWrenchBody(const prmForceCartesianSet & wrench)
 {
-    mControlMode = CARTESIAN_EFFORT;
+    SetControlMode(CARTESIAN_EFFORT);
     mDesiredWrench = wrench;
 }
 
 void mtsForceDimension::SetPositionGoalCartesian(const prmPositionCartesianSet & position)
 {
+    SetControlMode(CARTESIAN_POSITION);
+    mDesiredPosition = position;
+    mNewPositionGoal = true;
+
     // Rc: rotation current
     // Rd: rotation desired
     // Ro: rotation offset to make the rotation looks like desired
@@ -259,14 +317,14 @@ void mtsForceDimension::Freeze(void)
 
 void mtsForceDimension::LockOrientation(const vctMatRot3 & orientation)
 {
+    mRotationOffset = orientation * mRawOrientation.Inverse();
 }
 
 void mtsForceDimension::SetGravityCompensation(const bool & gravity)
 {
     if (gravity) {
-        dhdSetForceAndTorqueAndGripperForce(0.0, 0.0, 0.0,
-                                            0.0, 0.0, 0.0, 0.0);
+        dhdSetGravityCompensation(DHD_ON);
     } else {
-
+        dhdSetGravityCompensation(DHD_OFF);
     }
 }

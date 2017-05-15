@@ -55,9 +55,12 @@ class CISST_EXPORT mtsForceDimension: public mtsTaskContinuous
     void Cleanup(void);
 
 protected:
+    enum ControlModeType {UNDEFINED, CARTESIAN_POSITION, CARTESIAN_EFFORT};
 
     /*! Code called by all constructors. */
     void Init(void);
+    void GetRobotData(void);
+    void SetControlMode(const ControlModeType & mode);
 
     void SetRobotControlState(const std::string & state);
     void GetRobotControlState(std::string & state) const;
@@ -96,9 +99,10 @@ protected:
     prmStateJoint mStateGripper;
     vctMatRot3 mRotationOffset, mRawOrientation;
 
-    enum ControlModeType {CARTESIAN_POSITION, CARTESIAN_EFFORT};
     ControlModeType mControlMode;
 
+    bool mNewPositionGoal;
+    prmPositionCartesianSet mDesiredPosition;
     prmForceCartesianSet mDesiredWrench;
     double mDesiredEffortGripper;    
 };
