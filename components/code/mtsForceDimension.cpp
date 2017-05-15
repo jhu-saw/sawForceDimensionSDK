@@ -28,6 +28,11 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsForceDimension, mtsTaskContinuous, mtsT
 void mtsForceDimension::Init(void)
 {
     mArmState = "DVRK_POSITION_GOAL_CARTESIAN";
+    mControlMode = CARTESIAN_POSITION;
+
+    mDesiredWrench.Force().SetAll(0.0);
+    mDesiredEffortGripper = 0.0;
+    mGripperDirection = 1.0;
 
     mNumberOfDevices = 0;
 
@@ -47,7 +52,7 @@ void mtsForceDimension::Init(void)
         mInterface->AddCommandReadState(StateTable, mVelocityCartesian,
                                         "GetVelocityCartesian");
         mInterface->AddCommandReadState(StateTable, mForceTorqueCartesian,
-                                        "GetForceTorqueCartesian");
+                                        "GetWrenchBody");
         mInterface->AddCommandReadState(StateTable, mStateGripper,
                                         "GetStateGripper");
 
@@ -128,6 +133,11 @@ void mtsForceDimension::Configure(const std::string & filename)
                 + dhdErrorGetLastStr();
         }
     }
+
+    // set gripper direction
+    if (dhdIsLeftHanded()) {
+        mGripperDirection = -1.0;
+    }
 }
 
 
@@ -135,8 +145,6 @@ void mtsForceDimension::Startup(void)
 {
     CMN_LOG_CLASS_RUN_ERROR << "Startup" << std::endl;
     drdStop(true);
-    dhdSetForceAndTorqueAndGripperForce(0.0, 0.0, 0.0,
-                                        0.0, 0.0, 0.0, 0.0);
 }
 
 
@@ -167,6 +175,7 @@ void mtsForceDimension::Run(void)
         dhdGetAngularVelocityRad(&mVelocityCartesian.VelocityAngular().X(),
                                  &mVelocityCartesian.VelocityAngular().Y(),
                                  &mVelocityCartesian.VelocityAngular().Z());
+        mVelocityCartesian.SetValid(true);
 
         // force
         dhdGetForceAndTorque(&mForceTorqueCartesian.Force()[0],
@@ -175,13 +184,28 @@ void mtsForceDimension::Run(void)
                              &mForceTorqueCartesian.Force()[3],
                              &mForceTorqueCartesian.Force()[4],
                              &mForceTorqueCartesian.Force()[5]);
+        mForceTorqueCartesian.SetValid(true);
 
         // gripper
         dhdGetGripperAngleRad(&mStateGripper.Position().at(0));
-        mStateGripper.Position().at(0) *= -1.0;
+        mStateGripper.Position().at(0) *= mGripperDirection;
 
-    dhdSetForceAndTorqueAndGripperForce(0.0, 0.0, 0.0,
-                                        0.0, 0.0, 0.0, 0.0);
+        // control mode
+        switch (mControlMode) {
+        case CARTESIAN_EFFORT:
+            dhdSetForceAndTorqueAndGripperForce(mDesiredWrench.Force()[0],
+                                                mDesiredWrench.Force()[1],
+                                                mDesiredWrench.Force()[2],
+                                                mDesiredWrench.Force()[3],
+                                                mDesiredWrench.Force()[4],
+                                                mDesiredWrench.Force()[5],
+                                                mGripperDirection * mDesiredEffortGripper);
+            break;
+        case CARTESIAN_POSITION:
+            break;
+        default:
+            break;
+        }
     }
 }
 
@@ -204,9 +228,8 @@ void mtsForceDimension::GetRobotControlState(std::string & state) const
 
 void mtsForceDimension::SetWrenchBody(const prmForceCartesianSet & wrench)
 {
-    dhdSetForce(wrench.Force().X(),
-                wrench.Force().Y(),
-                wrench.Force().Z());
+    mControlMode = CARTESIAN_EFFORT;
+    mDesiredWrench = wrench;
 }
 
 void mtsForceDimension::SetPositionGoalCartesian(const prmPositionCartesianSet & position)

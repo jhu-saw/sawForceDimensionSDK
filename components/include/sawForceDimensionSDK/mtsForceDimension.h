@@ -87,12 +87,20 @@ protected:
     char mDeviceId;
     std::string mSystemName;
 
+    double mGripperDirection;
+
     prmPositionCartesianGet mPositionCartesian;
     prmVelocityCartesianGet mVelocityCartesian;
     prmForceCartesianGet mForceTorqueCartesian;
 
     prmStateJoint mStateGripper;
     vctMatRot3 mRotationOffset, mRawOrientation;
+
+    enum ControlModeType {CARTESIAN_POSITION, CARTESIAN_EFFORT};
+    ControlModeType mControlMode;
+
+    prmForceCartesianSet mDesiredWrench;
+    double mDesiredEffortGripper;    
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsForceDimension);
