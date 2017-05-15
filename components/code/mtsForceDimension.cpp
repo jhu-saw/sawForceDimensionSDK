@@ -164,8 +164,13 @@ void mtsForceDimension::Run(void)
         mRawOrientation.Row(0).Assign(rotation[0]);
         mRawOrientation.Row(1).Assign(rotation[1]);
         mRawOrientation.Row(2).Assign(rotation[2]);
-        mPositionCartesian.Position().Rotation() = mRotationOffset;
-        //        mPositionCartesian.Position().Rotation() = mRawOrientation * mRotationOffset;
+        // apply rotation to tip, this should come from a configuration file
+        vctMatRot3 rotationTip;
+        rotationTip.Assign( 0.0,  0.0, -1.0,
+                            0.0, -1.0,  0.0,
+                            -1.0, 0.0,  0.0);
+        mRawOrientation = mRawOrientation * rotationTip;
+        mPositionCartesian.Position().Rotation() = mRotationOffset * mRawOrientation;
         mPositionCartesian.Valid() = true;
 
         // velocity
@@ -234,15 +239,13 @@ void mtsForceDimension::SetWrenchBody(const prmForceCartesianSet & wrench)
 
 void mtsForceDimension::SetPositionGoalCartesian(const prmPositionCartesianSet & position)
 {
-    mRotationOffset = position.Goal().Rotation();
-    //     mRotationOffset = mRawOrientation.Inverse() * position.Goal().Rotation();
-    std::cerr << "LockOrientation" << std::endl
-              << "Current: " << std::endl
-              << mRawOrientation << std::endl
-              << "Desired: " << std::endl
-              << position.Goal().Rotation() << std::endl
-              << "Offset: " << std::endl
-              << mRotationOffset << std::endl;
+    // Rc: rotation current
+    // Rd: rotation desired
+    // Ro: rotation offset to make the rotation looks like desired
+    // Ro * Rc = Rd
+    // Ro = Rd * Rc_transpose
+    mRotationOffset = position.Goal().Rotation() // desired
+        * mRawOrientation.Inverse();
 }
 
 void mtsForceDimension::UnlockOrientation(void)
