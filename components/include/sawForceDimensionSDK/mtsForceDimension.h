@@ -19,18 +19,11 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsForceDimension_h
 #define _mtsForceDimension_h
 
-#include <cisstCommon/cmnPath.h>
 #include <cisstMultiTask/mtsTaskContinuous.h>
-#include <cisstParameterTypes/prmPositionCartesianGet.h>
-#include <cisstParameterTypes/prmPositionCartesianSet.h>
-#include <cisstParameterTypes/prmVelocityCartesianGet.h>
-#include <cisstParameterTypes/prmForceCartesianGet.h>
-#include <cisstParameterTypes/prmForceCartesianSet.h>
-#include <cisstParameterTypes/prmStateJoint.h>
-
-#include <json/json.h> // in order to read config file
 
 #include <sawForceDimensionSDK/sawForceDimensionSDKExport.h>  // always include last
+
+class mtsForceDimensionDevice;
 
 class CISST_EXPORT mtsForceDimension: public mtsTaskContinuous
 {
@@ -54,30 +47,13 @@ class CISST_EXPORT mtsForceDimension: public mtsTaskContinuous
     void Run(void);
     void Cleanup(void);
 
-protected:
     enum ControlModeType {UNDEFINED, CARTESIAN_POSITION, CARTESIAN_EFFORT};
 
-    /*! Code called by all constructors. */
+ protected:
+
     void Init(void);
-    void GetRobotData(void);
-    void SetControlMode(const ControlModeType & mode);
 
-    void SetRobotControlState(const std::string & state);
-    void GetRobotControlState(std::string & state) const;
-    std::string mArmState;
-
-    void SetPositionCartesian(const prmForceCartesianSet & desiredForceTorque);
-    void SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition);
-    void SetWrenchBody(const prmForceCartesianSet & newForce);
-    void SetGravityCompensation(const bool & gravityCompensation);
-    void LockOrientation(const vctMatRot3 & orientation);
-    void UnlockOrientation(void);
-    void Freeze(void);
-
-    struct {
-        mtsFunctionWrite RobotState;
-    } MessageEvents;
-    mtsInterfaceProvided * mInterface;
+    bool mConfigured;
 
     struct {
         int Major;
@@ -87,24 +63,6 @@ protected:
     } mSDKVersion;
 
     int mNumberOfDevices;
-    char mDeviceId;
-    std::string mSystemName;
-
-    double mGripperDirection;
-
-    prmPositionCartesianGet mPositionCartesian;
-    prmVelocityCartesianGet mVelocityCartesian;
-    prmForceCartesianGet mForceTorqueCartesian;
-
-    prmStateJoint mStateGripper;
-    vctMatRot3 mRotationOffset, mRawOrientation;
-
-    ControlModeType mControlMode;
-
-    bool mNewPositionGoal;
-    prmPositionCartesianSet mDesiredPosition;
-    prmForceCartesianSet mDesiredWrench;
-    double mDesiredEffortGripper;    
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsForceDimension);
