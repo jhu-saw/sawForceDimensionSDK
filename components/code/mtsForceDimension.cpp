@@ -39,12 +39,17 @@ class mtsForceDimensionDevice
 {
 public:
     mtsForceDimensionDevice(const char deviceId,
+                            const std::string & name,
                             mtsStateTable * stateTable,
                             mtsInterfaceProvided * interfaceProvided);
-protected:
     void Startup(void);
     void Run(void);
     void Cleanup(void);
+    inline const std::string & Name(void) const {
+        return mName;
+    }
+
+protected:
     void GetRobotData(void);
     void SetControlMode(const mtsForceDimension::ControlModeType & mode);
 
@@ -66,6 +71,7 @@ protected:
     } MessageEvents;
 
     char mDeviceId;
+    std::string mName;
     mtsStateTable * mStateTable;
     mtsInterfaceProvided * mInterface;
     std::string mSystemName;
@@ -88,9 +94,11 @@ protected:
 };
 
 mtsForceDimensionDevice::mtsForceDimensionDevice(const char deviceId,
+                                                 const std::string & name,
                                                  mtsStateTable * stateTable,
                                                  mtsInterfaceProvided * interfaceProvided):
     mDeviceId(deviceId),
+    mName(name),
     mStateTable(stateTable),
     mInterface(interfaceProvided)
 {
@@ -157,6 +165,26 @@ void mtsForceDimensionDevice::Startup(void)
 {
     // required to change asynchronous operation mode
     dhdEnableExpertMode();
+
+    if (drdCheckInit(mDeviceId) < 0) {
+        drdStop();
+        // message = this->GetName() + ": device initialization check failed, drdCheckInit returned: " + dhdErrorGetLastStr();
+        //        mInterface->SendError(message);
+    }
+
+    if (!drdIsInitialized(mDeviceId)) {
+        if (drdAutoInit(mDeviceId) < 0) {
+            // message = this->GetName() + ": failed to auto init, last reported error is: "
+            //     + dhdErrorGetLastStr();
+        }
+    }
+
+    // set gripper direction
+    if (dhdIsLeftHanded(mDeviceId)) {
+        mGripperDirection = -1.0;
+    }
+
+    drdStop(true);
 
     // update current state
     mStateTable->Start();
@@ -363,6 +391,11 @@ void mtsForceDimension::Configure(const std::string & filename)
         return;
     }
 
+    typedef std::list<std::string> NoSerialDevicesType;
+    NoSerialDevicesType noSerialDevices;
+    typedef std::map<int, std::string> SerialDevicesType;
+    SerialDevicesType serialDevices;
+
     if (filename != "") {
         // read JSON file passed as param, see configAtracsysFusionTrack.json for an example
         std::ifstream jsonStream;
@@ -395,15 +428,23 @@ void mtsForceDimension::Configure(const std::string & filename)
                 return;
             }
             int deviceSerial = jsonValue["serial"].asInt();
-            // make sure toolName is valid
-            std::cerr << "JSON serial" << deviceSerial << std::endl;
+            if (deviceSerial == 0) {
+                noSerialDevices.push_back(deviceName);
+            } else {
+                // check that this serial number hasn't already been assigned
+                SerialDevicesType::const_iterator found = serialDevices.find(deviceSerial);
+                if (found == serialDevices.end()) {
+                    serialDevices[deviceSerial] = deviceName;
+                } else {
+                    CMN_LOG_CLASS_INIT_ERROR << "Configure: invalid tool["
+                                             << index << "], serial number "
+                                             << deviceSerial << " already used in "
+                                             << filename << std::endl;
+                    return;
+                }
+            }
         }
     }
-
-
-
-
-    CMN_LOG_CLASS_INIT_VERBOSE << "Configure: using " << filename << std::endl;
 
     // sdk version number
     dhdGetSDKVersion (&(mSDKVersion.Major),
@@ -422,16 +463,66 @@ void mtsForceDimension::Configure(const std::string & filename)
         return;
     }
 
-    // identify each device
+    // identify and name each device
     for (int i = 0;
          i < mNumberOfDevices; i++) {
         const int deviceId = dhdOpenID(i);
-        const std::string systemName = dhdGetSystemName(deviceId);
-        ushort serial;
-        std::cerr << "Serial get: " << dhdGetSerialNumber(&serial, deviceId) << std::endl
-                  << dhdErrorGetLastStr() << std::endl;
-        const int serialNumber = serial;
-        std::cerr << "------------- " << systemName << " -- " << serial << std::endl;
+        if (deviceId == -1) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to open device "
+                                     << i << ", id: " << deviceId << std::endl;
+
+        }
+        std::string systemName = dhdGetSystemName(deviceId);
+        bool hasSerial = true;
+        ushort serialUShort = 0;
+        if (dhdGetSerialNumber(&serialUShort, deviceId) != 0) {
+            // error while getting serial number
+            hasSerial = false;
+            CMN_LOG_CLASS_INIT_WARNING << "Configure: can't retrieve serial number for device "
+                                       << i << ", id: " << deviceId << std::endl;
+        }
+        // for some reason, FALCON serial number is always 65535
+        if (dhdGetSystemType(deviceId) == DHD_DEVICE_FALCON) {
+            hasSerial = false;
+        }
+        // find name of device based on serial number in configuration file
+        std::string deviceName = "";
+        if (hasSerial) {
+            // look for name on map from configuration file
+            SerialDevicesType::const_iterator found = serialDevices.find(serialUShort);
+            if (found != serialDevices.end()) {
+                deviceName = found->second;
+            }
+        }
+        // if we still don't have a name
+        if (deviceName == "") {
+            // look in the list of names from configuration file
+            if (!noSerialDevices.empty()) {
+                deviceName = *(noSerialDevices.begin());
+                noSerialDevices.pop_front();
+            } else {
+                // now we just make up a name
+                std::stringstream tempName;
+                tempName << systemName << std::setfill('0') << std::setw(2) << deviceId;
+                deviceName = tempName.str();
+            }
+        }
+        // create the device data and add to list of devices
+        mtsStateTable * stateTable
+            = new mtsStateTable(StateTable.GetHistoryLength(),
+                                deviceName);
+        mtsInterfaceProvided * interfaceProvided
+            = this->AddInterfaceProvided(deviceName);
+        if (!interfaceProvided) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: can't create interface provided with name \""
+                                     << deviceName << "\".  Device "
+                                     << i << ", id: " << deviceId << std::endl;
+            return;
+        }
+        mtsForceDimensionDevice * device =
+            new mtsForceDimensionDevice(deviceId, deviceName,
+                                        stateTable, interfaceProvided);
+        mDevices.push_back(device);
     }
 
     #if 0
@@ -466,14 +557,35 @@ void mtsForceDimension::Configure(const std::string & filename)
     if (dhdIsLeftHanded()) {
         mGripperDirection = -1.0;
     }
+
+    drdStop(true);
     #endif
 }
 
 
 void mtsForceDimension::Startup(void)
 {
-    CMN_LOG_CLASS_RUN_ERROR << "Startup" << std::endl;
-    drdStop(true);
+    const DevicesType::iterator end = mDevices.end();
+    DevicesType::iterator device;
+    for (device = mDevices.begin();
+         device != end;
+         ++device) {
+        (*device)->Startup();
+    }
+}
+
+
+std::list<std::string> mtsForceDimension::GetDeviceNames(void) const
+{
+    std::list<std::string> result;
+    const DevicesType::const_iterator end = mDevices.end();
+    DevicesType::const_iterator device;
+    for (device = mDevices.begin();
+         device != end;
+         ++device) {
+        result.push_back((*device)->Name());
+    }
+    return result;
 }
 
 
@@ -481,9 +593,24 @@ void mtsForceDimension::Run(void)
 {
     // process mts commands using interface->ProcessMailBoxes
     // DO NOT USE ProcessQueuedCommands() !!!
+
+    const DevicesType::iterator end = mDevices.end();
+    DevicesType::iterator device;
+    for (device = mDevices.begin();
+         device != end;
+         ++device) {
+        (*device)->Run();
+    }
 }
 
 void mtsForceDimension::Cleanup(void)
 {
+    const DevicesType::iterator end = mDevices.end();
+    DevicesType::iterator device;
+    for (device = mDevices.begin();
+         device != end;
+         ++device) {
+        (*device)->Cleanup();
+    }
     drdClose();
 }

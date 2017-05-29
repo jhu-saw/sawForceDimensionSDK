@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-11-10
 
-  (C) Copyright 2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -57,12 +57,12 @@ int main(int argc, char * argv[])
     std::cout << "Options provided:" << std::endl << arguments << std::endl;
 
     // create the components
-    mtsForceDimension * device = new mtsForceDimension("Device");
-    device->Configure(jsonConfigFile);
+    mtsForceDimension * forceDimension = new mtsForceDimension("ForcedimensionSDK");
+    forceDimension->Configure(jsonConfigFile);
 
     // add the components to the component manager
     mtsManagerLocal * componentManager = mtsComponentManager::GetInstance();
-    componentManager->AddComponent(device);
+    componentManager->AddComponent(forceDimension);
 
     // create a Qt user interface
     QApplication application(argc, argv);
@@ -73,13 +73,21 @@ int main(int argc, char * argv[])
     // device
     mtsForceDimensionQtWidget * deviceWidget;
 
-    // Qt Widget
-    deviceWidget = new mtsForceDimensionQtWidget("device-gui");
-    deviceWidget->Configure();
-    componentManager->AddComponent(deviceWidget);
-    componentManager->Connect(deviceWidget->GetName(), "Device",
-                              device->GetName(), "Robot");
-    tabWidget->addTab(deviceWidget, "device");
+    // Qt Widget(s)
+    typedef std::list<std::string> DevicesType;
+    DevicesType devices = forceDimension->GetDeviceNames();
+    const DevicesType::const_iterator end = devices.end();
+    DevicesType::const_iterator device;
+    for (device = devices.begin();
+         device != end;
+         ++device) {
+        deviceWidget = new mtsForceDimensionQtWidget(*device + "-gui");
+        deviceWidget->Configure();
+        componentManager->AddComponent(deviceWidget);
+        componentManager->Connect(deviceWidget->GetName(), "Device",
+                                  forceDimension->GetName(), *device);
+        tabWidget->addTab(deviceWidget, (*device).c_str());
+    }
 
     // create and start all components
     componentManager->CreateAllAndWait(5.0 * cmn_s);

@@ -43,6 +43,7 @@ class CISST_EXPORT mtsForceDimension: public mtsTaskContinuous
     ~mtsForceDimension(void) {};
 
     void Configure(const std::string & filename = "");
+    std::list<std::string> GetDeviceNames(void) const;
     void Startup(void);
     void Run(void);
     void Cleanup(void);
@@ -63,6 +64,9 @@ class CISST_EXPORT mtsForceDimension: public mtsTaskContinuous
     } mSDKVersion;
 
     int mNumberOfDevices;
+
+    typedef std::list<mtsForceDimensionDevice *> DevicesType;
+    DevicesType mDevices;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsForceDimension);
