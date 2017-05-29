@@ -63,15 +63,16 @@ int main(int argc, char * argv[])
     std::cout << "Options provided:" << std::endl << arguments << std::endl;
 
     // create the components
-    mtsForceDimension * device = new mtsForceDimension("Device");
-    device->Configure(jsonConfigFile);
+    mtsForceDimension * forceDimension = new mtsForceDimension("ForceDimensionSDK");
+    forceDimension->Configure(jsonConfigFile);
 
     // add the components to the component manager
     mtsManagerLocal * componentManager = mtsComponentManager::GetInstance();
-    componentManager->AddComponent(device);
+    componentManager->AddComponent(forceDimension);
 
     // ROS bridge
     mtsROSBridge * rosBridge = new mtsROSBridge("ForceDimensionBridge", rosPeriod, true);
+    componentManager->AddComponent(rosBridge);
 
     // create a Qt user interface
     QApplication application(argc, argv);
@@ -83,37 +84,37 @@ int main(int argc, char * argv[])
     mtsForceDimensionQtWidget * deviceWidget;
 
     // configure all components
+    typedef std::list<std::string> DevicesType;
+    DevicesType devices = forceDimension->GetDeviceNames();
+    const DevicesType::const_iterator end = devices.end();
+    DevicesType::const_iterator device;
+    for (device = devices.begin();
+         device != end;
+         ++device) {
+        // Qt
+        deviceWidget = new mtsForceDimensionQtWidget(*device + "-gui");
+        deviceWidget->Configure();
+        componentManager->AddComponent(deviceWidget);
+        componentManager->Connect(deviceWidget->GetName(), "Device",
+                                  forceDimension->GetName(), *device);
+        tabWidget->addTab(deviceWidget, (*device).c_str());
 
-    // ROS publisher
-    std::string deviceName = "omega";
-    rosBridge->AddPublisherFromCommandRead<prmPositionCartesianGet, geometry_msgs::PoseStamped>
-        ("Device", "GetPositionCartesian",
-         "/force_dimension/" + deviceName + "/position_cartesian_current");
-
-    rosBridge->AddPublisherFromCommandRead<prmVelocityCartesianGet, geometry_msgs::TwistStamped>
-        ("Device", "GetVelocityCartesian",
-         "/force_dimension/" + deviceName + "/twist_body_current");
-
-    rosBridge->AddPublisherFromCommandRead<prmForceCartesianGet, geometry_msgs::WrenchStamped>
-        ("Device", "GetForceTorqueCartesian",
-         "/force_dimension/" + deviceName + "/wrench_body_current");
-
-    rosBridge->AddPublisherFromCommandRead<prmStateJoint, sensor_msgs::JointState>
-        ("Device", "GetStateGripper",
-         "/force_dimension/" + deviceName + "/state_gripper_current");
-
-    // Qt Widget
-    deviceWidget = new mtsForceDimensionQtWidget("device-gui");
-    deviceWidget->Configure();
-    componentManager->AddComponent(deviceWidget);
-    componentManager->Connect(deviceWidget->GetName(), "Device",
-                              device->GetName(), "Robot");
-    tabWidget->addTab(deviceWidget, "device");
-
-    // add the bridge after all interfaces have been created
-    componentManager->AddComponent(rosBridge);
-    componentManager->Connect(rosBridge->GetName(), "Device",
-                              device->GetName(), "Robot");
+        rosBridge->AddPublisherFromCommandRead<prmPositionCartesianGet, geometry_msgs::PoseStamped>
+            (*device, "GetPositionCartesian",
+             "/force_dimension/" + *device + "/position_cartesian_current");
+        // ROS
+        rosBridge->AddPublisherFromCommandRead<prmVelocityCartesianGet, geometry_msgs::TwistStamped>
+            (*device, "GetVelocityCartesian",
+             "/force_dimension/" + *device + "/twist_body_current");
+        rosBridge->AddPublisherFromCommandRead<prmForceCartesianGet, geometry_msgs::WrenchStamped>
+            (*device, "GetWrenchBody",
+             "/force_dimension/" + *device + "/wrench_body_current");
+        rosBridge->AddPublisherFromCommandRead<prmStateJoint, sensor_msgs::JointState>
+            (*device, "GetStateGripper",
+             "/force_dimension/" + *device + "/state_gripper_current");
+        componentManager->Connect(rosBridge->GetName(), *device,
+                                  forceDimension->GetName(), *device);
+    }
 
     // create and start all components
     componentManager->CreateAllAndWait(5.0 * cmn_s);
