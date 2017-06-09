@@ -166,11 +166,13 @@ void mtsForceDimensionDevice::Startup(void)
     // required to change asynchronous operation mode
     dhdEnableExpertMode();
 
+    /*
     if (drdCheckInit(mDeviceId) < 0) {
         drdStop();
         // message = this->GetName() + ": device initialization check failed, drdCheckInit returned: " + dhdErrorGetLastStr();
         //        mInterface->SendError(message);
     }
+    */
 
     if (!drdIsInitialized(mDeviceId)) {
         if (drdAutoInit(mDeviceId) < 0) {
@@ -524,42 +526,6 @@ void mtsForceDimension::Configure(const std::string & filename)
                                         stateTable, interfaceProvided);
         mDevices.push_back(device);
     }
-
-    #if 0
-    // open the first available device
-    if (drdOpen() < 0) {
-        CMN_LOG_CLASS_INIT_ERROR << this->GetName() << ": can't open device, drdOpen returned: "
-                                 << dhdErrorGetLastStr() << std::endl;
-        return;
-    }
-
-    if (drdCheckInit() < 0) {
-       drdStop();
-       message = this->GetName() + ": device initialization check failed, drdCheckInit returned: " + dhdErrorGetLastStr();
-       mInterface->SendError(message);
-    }
-
-    // identify device
-    mSystemName = dhdGetSystemName();
-    CMN_LOG_CLASS_INIT_VERBOSE << "Configure: found system " << mSystemName << std::endl;
-
-    mNumberOfDevices = dhdGetDeviceCount();
-    CMN_LOG_CLASS_INIT_VERBOSE << "Configure: number of devices " << mNumberOfDevices << std::endl;
-
-    if (!drdIsInitialized()) {
-        if (drdAutoInit() < 0) {
-            message = this->GetName() + ": failed to auto init, last reported error is: "
-                + dhdErrorGetLastStr();
-        }
-    }
-
-    // set gripper direction
-    if (dhdIsLeftHanded()) {
-        mGripperDirection = -1.0;
-    }
-
-    drdStop(true);
-    #endif
 }
 
 
