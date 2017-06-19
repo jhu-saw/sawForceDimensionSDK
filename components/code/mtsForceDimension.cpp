@@ -38,7 +38,7 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsForceDimension, mtsTaskContinuous, mtsT
 class mtsForceDimensionDevice
 {
 public:
-    mtsForceDimensionDevice(const char deviceId,
+    mtsForceDimensionDevice(const int deviceId,
                             const std::string & name,
                             mtsStateTable * stateTable,
                             mtsInterfaceProvided * interfaceProvided);
@@ -70,7 +70,8 @@ protected:
         mtsFunctionWrite RobotState;
     } MessageEvents;
 
-    char mDeviceId;
+    int mDeviceId;
+    std::string mDeviceIdString;
     std::string mName;
     mtsStateTable * mStateTable;
     mtsInterfaceProvided * mInterface;
@@ -93,7 +94,7 @@ protected:
     double mDesiredEffortGripper;
 };
 
-mtsForceDimensionDevice::mtsForceDimensionDevice(const char deviceId,
+mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
                                                  const std::string & name,
                                                  mtsStateTable * stateTable,
                                                  mtsInterfaceProvided * interfaceProvided):
@@ -102,6 +103,10 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const char deviceId,
     mStateTable(stateTable),
     mInterface(interfaceProvided)
 {
+    std::stringstream idString;
+    idString << deviceId;
+    mDeviceIdString = idString.str();
+
     mArmState = "DVRK_POSITION_GOAL_CARTESIAN";
     mNewPositionGoal = false;
     mControlMode = mtsForceDimension::UNDEFINED;
@@ -163,30 +168,24 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const char deviceId,
 
 void mtsForceDimensionDevice::Startup(void)
 {
-    // required to change asynchronous operation mode
-    dhdEnableExpertMode();
-
-    /*
-    if (drdCheckInit(mDeviceId) < 0) {
-        drdStop();
-        // message = this->GetName() + ": device initialization check failed, drdCheckInit returned: " + dhdErrorGetLastStr();
-        //        mInterface->SendError(message);
-    }
-    */
-
     if (!drdIsInitialized(mDeviceId)) {
         if (drdAutoInit(mDeviceId) < 0) {
-            // message = this->GetName() + ": failed to auto init, last reported error is: "
-            //     + dhdErrorGetLastStr();
+            mInterface->SendError(mName + ": failed to auto init, last reported error is: "
+                                  + dhdErrorGetLastStr() + " [id:" + mDeviceIdString + "]");
+        } else {
+            mInterface->SendStatus(mName + ": properly initialized");
         }
     }
 
     // set gripper direction
     if (dhdIsLeftHanded(mDeviceId)) {
         mGripperDirection = -1.0;
+        mInterface->SendStatus(mName + ": is left handed");
+    } else {
+        mInterface->SendStatus(mName + ": is right handed or symmetrical");
     }
 
-    drdStop(true);
+    drdStop(true, mDeviceId);
 
     // update current state
     mStateTable->Start();
@@ -310,7 +309,10 @@ void mtsForceDimensionDevice::SetControlMode(const mtsForceDimension::ControlMod
         drdRegulatePos(true, mDeviceId);
         drdRegulateRot(false, mDeviceId);
         drdRegulateGrip(false, mDeviceId);
-        drdStart();
+        if (drdStart(mDeviceId) < 0) {
+            mInterface->SendError(mName + ": failed to start control look, "
+                                  + dhdErrorGetLastStr() + " [id:" + mDeviceIdString + "]");
+        }
         // start from current position
         mDesiredPosition.Goal().Assign(mPositionCartesian.Position());
         mNewPositionGoal = true;
@@ -448,6 +450,9 @@ void mtsForceDimension::Configure(const std::string & filename)
         }
     }
 
+    // required to change asynchronous operation mode
+    dhdEnableExpertMode();
+
     // sdk version number
     dhdGetSDKVersion (&(mSDKVersion.Major),
                       &(mSDKVersion.Minor),
@@ -468,7 +473,7 @@ void mtsForceDimension::Configure(const std::string & filename)
     // identify and name each device
     for (int i = 0;
          i < mNumberOfDevices; i++) {
-        const int deviceId = dhdOpenID(i);
+        const int deviceId = drdOpenID(i);
         if (deviceId == -1) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to open device "
                                      << i << ", id: " << deviceId << std::endl;
