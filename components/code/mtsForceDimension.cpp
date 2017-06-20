@@ -339,6 +339,10 @@ void mtsForceDimensionDevice::SetWrenchBody(const prmForceCartesianSet & wrench)
 
 void mtsForceDimensionDevice::SetEffortGripper(const prmForceTorqueJointSet & effortGripper)
 {
+    if (effortGripper.ForceTorque().size() != 1) {
+        mInterface->SendError(mName + ": effort vector size for SetEffortGripper must be 1 [id:" + mDeviceIdString + "]");
+        return;
+    }
     SetControlMode(mtsForceDimension::CARTESIAN_EFFORT);
     mDesiredEffortGripper = effortGripper.ForceTorque().at(0) * mGripperDirection;
 }
