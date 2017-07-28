@@ -1,5 +1,5 @@
 # sawForceDimensionSDK
-SAW wrapper for Force Dimension haptic devices - this is a proof of concept, use at your own risks.
+SAW wrapper for Force Dimension haptic devices - the ForceDimension SDK happens to support the devices manufactured by ForceDimension (Sigma, Omega, ...) as well as the Novint Falcon.
 
 The Force Dimension SDK can be downloaded from the manufacturer's web site: http://www.forcedimension.com/download/sdk
 
@@ -44,9 +44,9 @@ Once this is done, test the provided examples in the SDK `bin` folder.  You shou
 
 This is by far the simplest solution to compile and run the examples on Linux.
 See how to build cisst with ROS/Catkin tools on the cisst wiki:
-https://github.com/jhu-cisst/cisst/wiki/Compiling-cisst-and-SAW-with-CMake
+https://github.com/jhu-cisst/cisst/wiki/Compiling-cisst-and-SAW-with-CMake (Make sure you go to the ROS build instructions).
 
-When compiling the SAW Force Dimension code, you will need to specify where to find the Force Dimension SDK.  Do a first `catkin build`, this build will fail because the directory containing the SDK is not defined.   To define it, use `ccmake` (DO NOT USE `cmake-gui`) on the build directory for the SAW Force Dimension component.  For example:
+When compiling the SAW Force Dimension code, you will need to specify where to find the Force Dimension SDK.  Do a first `catkin build`, this build will skip the sawForceDimensionSDK because the directory containing the SDK is not defined.   To define it, use `ccmake` in a shell/terminal that has all the ROS environment variables defined (DO NOT USE `cmake-gui`, for some reasons, it ignores the environment variables) on the build directory for the SAW Force Dimension component.  For example:
 ```sh
 adeguet1@lcsr-qla:~/catkin_ws$ ccmake build_release/saw_force_dimension_sdk
 ```
