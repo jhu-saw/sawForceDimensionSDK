@@ -46,9 +46,9 @@ This is by far the simplest solution to compile and run the examples on Linux.
 See how to build cisst with ROS/Catkin tools on the cisst wiki:
 https://github.com/jhu-cisst/cisst/wiki/Compiling-cisst-and-SAW-with-CMake
 
-When compiling the SAW Force Dimension code, you will need to specify where to find the Force Dimension SDK.  Do a first `catkin build`, this build will fail because the directory containing the SDK is not defined.   To define it, use `ccmake` or `cmake-gui` on the build directory for the SAW Force Dimension component.  For example:
+When compiling the SAW Force Dimension code, you will need to specify where to find the Force Dimension SDK.  Do a first `catkin build`, this build will fail because the directory containing the SDK is not defined.   To define it, use `ccmake` (DO NOT USE `cmake-gui`) on the build directory for the SAW Force Dimension component.  For example:
 ```sh
-adeguet1@lcsr-qla:~/catkin_ws$ cmake-gui build_release/saw_force_dimension_sdk
+adeguet1@lcsr-qla:~/catkin_ws$ ccmake build_release/saw_force_dimension_sdk
 ```
 In the command above, the ROS workspace is `~/catkin_ws` and the build tree is `build_release`.  You might have `devel` or `devel_debug` depending on your workspace configuration.
 
