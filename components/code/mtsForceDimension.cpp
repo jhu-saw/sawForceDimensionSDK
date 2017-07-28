@@ -27,6 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
 #include <cisstParameterTypes/prmStateJoint.h>
+#include <cisstParameterTypes/prmEventButton.h>
 
 #include <json/json.h> // in order to read config file
 
@@ -38,10 +39,13 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsForceDimension, mtsTaskContinuous, mtsT
 class mtsForceDimensionDevice
 {
 public:
+    typedef std::list<mtsInterfaceProvided *> ButtonInterfaces;
+
     mtsForceDimensionDevice(const int deviceId,
                             const std::string & name,
                             mtsStateTable * stateTable,
-                            mtsInterfaceProvided * interfaceProvided);
+                            mtsInterfaceProvided * interfaceProvided,
+                            const ButtonInterfaces & buttonInterfaces);
     void Startup(void);
     void Run(void);
     void Cleanup(void);
@@ -53,8 +57,10 @@ protected:
     void GetRobotData(void);
     void SetControlMode(const mtsForceDimension::ControlModeType & mode);
 
-    void SetRobotControlState(const std::string & state);
-    void GetRobotControlState(std::string & state) const;
+    void SetDesiredState(const std::string & state);
+    void GetDesiredState(std::string & state) const;
+    void GetCurrentState(std::string & state) const;
+
     std::string mArmState;
 
     void SetPositionCartesian(const prmForceCartesianSet & desiredForceTorque);
@@ -67,7 +73,8 @@ protected:
     void Freeze(void);
 
     struct {
-        mtsFunctionWrite RobotState;
+        mtsFunctionWrite DesiredState;
+        mtsFunctionWrite CurrentState;
     } MessageEvents;
 
     int mDeviceId;
@@ -76,6 +83,16 @@ protected:
     mtsStateTable * mStateTable;
     mtsInterfaceProvided * mInterface;
     std::string mSystemName;
+
+    uint mPreviousButtonMask;
+    struct ButtonData {
+        std::string Name;
+        mtsFunctionWrite Function;
+        bool Pressed;
+    };
+    typedef std::list<ButtonData *> ButtonsData;
+
+    ButtonsData mButtonCallbacks;
 
     double mGripperDirection;
 
@@ -97,7 +114,8 @@ protected:
 mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
                                                  const std::string & name,
                                                  mtsStateTable * stateTable,
-                                                 mtsInterfaceProvided * interfaceProvided):
+                                                 mtsInterfaceProvided * interfaceProvided,
+                                                 const ButtonInterfaces & buttonInterfaces):
     mDeviceId(deviceId),
     mName(name),
     mStateTable(stateTable),
@@ -107,7 +125,7 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
     idString << deviceId;
     mDeviceIdString = idString.str();
 
-    mArmState = "DVRK_POSITION_GOAL_CARTESIAN";
+    mArmState = "POWERED";
     mNewPositionGoal = false;
     mControlMode = mtsForceDimension::UNDEFINED;
 
@@ -151,17 +169,33 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
                                    this, "Freeze");
 
         // robot State
-        mInterface->AddCommandWrite(&mtsForceDimensionDevice::SetRobotControlState,
-                                    this, "SetRobotControlState", std::string(""));
-        mInterface->AddCommandRead(&mtsForceDimensionDevice::GetRobotControlState,
-                                   this, "GetRobotControlState", std::string(""));
+        mInterface->AddCommandWrite(&mtsForceDimensionDevice::SetDesiredState,
+                                    this, "SetDesiredState", std::string(""));
+        mInterface->AddCommandRead(&mtsForceDimensionDevice::GetDesiredState,
+                                   this, "GetDesiredState", std::string(""));
+        mInterface->AddCommandRead(&mtsForceDimensionDevice::GetCurrentState,
+                                   this, "GetCurrentState", std::string(""));
 
         // events
-        mInterface->AddEventWrite(MessageEvents.RobotState, "RobotState", std::string(""));
+        mInterface->AddEventWrite(MessageEvents.DesiredState, "DesiredState", std::string(""));
+        mInterface->AddEventWrite(MessageEvents.CurrentState, "CurrentState", std::string(""));
 
         // stats
         mInterface->AddCommandReadState(*mStateTable, mStateTable->PeriodStats,
                                         "GetPeriodStatistics");
+    }
+
+    // buttons
+    const ButtonInterfaces::const_iterator endButtons = buttonInterfaces.end();
+    ButtonInterfaces::const_iterator buttonInterface;
+    for (buttonInterface = buttonInterfaces.begin();
+         buttonInterface != endButtons;
+         ++buttonInterface) {
+        ButtonData * data = new ButtonData;
+        mButtonCallbacks.push_back(data);
+        data->Name = (*buttonInterface)->GetName();
+        data->Pressed = false;
+        (*buttonInterface)->AddEventWrite(data->Function, "Button", prmEventButton());
     }
 }
 
@@ -282,16 +316,50 @@ void mtsForceDimensionDevice::GetRobotData(void)
     // gripper
     dhdGetGripperAngleRad(&mStateGripper.Position().at(0), mDeviceId);
     mStateGripper.Position().at(0) *= mGripperDirection;
+
+    // buttons
+    uint currentButtonMask = dhdGetButtonMask(mDeviceId);
+    // if any button pressed
+    if (mPreviousButtonMask != currentButtonMask) {
+        mPreviousButtonMask = currentButtonMask;
+        uint index = 0;
+        const ButtonsData::iterator buttonsEnd = mButtonCallbacks.end();
+        ButtonsData::iterator button;
+        for (button = mButtonCallbacks.begin();
+             button != buttonsEnd;
+             ++button) {
+            const bool current =  (currentButtonMask & (1 << index));
+            index++;
+            if (current != (*button)->Pressed) {
+                (*button)->Pressed = current;
+                // generate event
+                prmEventButton event;
+                if (current) {
+                    event.SetType(prmEventButton::PRESSED);
+                } else {
+                    event.SetType(prmEventButton::RELEASED);
+                }
+                (*button)->Function(event);
+            }
+        }
+    }
 }
 
-void mtsForceDimensionDevice::SetRobotControlState(const std::string & state)
+void mtsForceDimensionDevice::SetDesiredState(const std::string & state)
 {
     mArmState = state;
-    MessageEvents.RobotState(state);
-    mInterface->SendStatus(mInterface->GetName() + ": state is now " + state);
+    MessageEvents.DesiredState(state);
+    mInterface->SendStatus(mInterface->GetName() + ": desired state " + state);
+    MessageEvents.CurrentState(state);
+    mInterface->SendStatus(mInterface->GetName() + ": current state " + state);
 }
 
-void mtsForceDimensionDevice::GetRobotControlState(std::string & state) const
+void mtsForceDimensionDevice::GetDesiredState(std::string & state) const
+{
+    state = mArmState;
+}
+
+void mtsForceDimensionDevice::GetCurrentState(std::string & state) const
 {
     state = mArmState;
 }
@@ -518,6 +586,15 @@ void mtsForceDimension::Configure(const std::string & filename)
                 deviceName = tempName.str();
             }
         }
+        // create list of buttons based on device type
+        std::list<mtsInterfaceProvided *> buttonInterfaces;
+        if (dhdGetSystemType(deviceId) == DHD_DEVICE_FALCON) {
+            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Center"));
+            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Left"));
+            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Top"));
+            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Right"));
+        }
+
         // create the device data and add to list of devices
         mtsStateTable * stateTable
             = new mtsStateTable(StateTable.GetHistoryLength(),
@@ -532,7 +609,8 @@ void mtsForceDimension::Configure(const std::string & filename)
         }
         mtsForceDimensionDevice * device =
             new mtsForceDimensionDevice(deviceId, deviceName,
-                                        stateTable, interfaceProvided);
+                                        stateTable, interfaceProvided,
+                                        buttonInterfaces);
         mDevices.push_back(device);
     }
 }
