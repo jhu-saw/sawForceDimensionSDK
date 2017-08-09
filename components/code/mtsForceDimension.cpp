@@ -283,13 +283,8 @@ void mtsForceDimensionDevice::GetRobotData(void)
     mRawOrientation.Row(0).Assign(rotation[0]);
     mRawOrientation.Row(1).Assign(rotation[1]);
     mRawOrientation.Row(2).Assign(rotation[2]);
-    // apply rotation to tip, this should come from a configuration file
-    vctMatRot3 rotationTip;
-    rotationTip.Assign( 0.0,  0.0, -1.0,
-                        0.0, -1.0,  0.0,
-                        -1.0, 0.0,  0.0);
-    mRawOrientation = mRawOrientation * rotationTip;
-    mPositionCartesian.Position().Rotation() = mRotationOffset * mRawOrientation;
+    // apply rotation offset
+    mPositionCartesian.Position().Rotation() = mRawOrientation * mRotationOffset;
     mPositionCartesian.Valid() = true;
 
     // velocity
@@ -421,13 +416,7 @@ void mtsForceDimensionDevice::SetPositionGoalCartesian(const prmPositionCartesia
     mDesiredPosition = position;
     mNewPositionGoal = true;
 
-    // Rc: rotation current
-    // Rd: rotation desired
-    // Ro: rotation offset to make the rotation looks like desired
-    // Ro * Rc = Rd
-    // Ro = Rd * Rc_transpose
-    mRotationOffset = position.Goal().Rotation() // desired
-        * mRawOrientation.Inverse();
+    mRotationOffset = mRawOrientation.Inverse() * position.Goal().Rotation();
 }
 
 void mtsForceDimensionDevice::UnlockOrientation(void)
@@ -441,7 +430,13 @@ void mtsForceDimensionDevice::Freeze(void)
 
 void mtsForceDimensionDevice::LockOrientation(const vctMatRot3 & orientation)
 {
-    mRotationOffset = orientation * mRawOrientation.Inverse();
+    // Rc: rotation current
+    // Rd: rotation desired
+    // Ro: rotation offset to make the rotation looks like desired
+    // Rc * Ro = Rd
+    // Ro = Rc_transpose * Rd
+    mRotationOffset = mRawOrientation.Inverse() * orientation;
+        
 }
 
 void mtsForceDimensionDevice::SetGravityCompensation(const bool & gravity)
