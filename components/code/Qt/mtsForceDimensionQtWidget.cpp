@@ -23,10 +23,12 @@ http://www.cisst.org/cisst/license.txt.
 #include <QString>
 #include <QtGui>
 #include <QMessageBox>
+#include <QPushButton>
 
 // cisst
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <sawForceDimensionSDK/mtsForceDimensionQtWidget.h>
+#include <cisstParameterTypes/prmForceCartesianSet.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsForceDimensionQtWidget, mtsComponent, std::string);
 
@@ -34,12 +36,18 @@ mtsForceDimensionQtWidget::mtsForceDimensionQtWidget(const std::string & compone
     mtsComponent(componentName),
     TimerPeriodInMilliseconds(periodInSeconds)
 {
+    QMMessage = new mtsMessageQtWidget();
+
     // Setup CISST Interface
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Device");
     if (interfaceRequired) {
+        QMMessage->SetInterfaceRequired(interfaceRequired);
         interfaceRequired->AddFunction("GetPositionCartesian", Device.GetPositionCartesian);
         interfaceRequired->AddFunction("GetStateGripper", Device.GetStateGripper);
         interfaceRequired->AddFunction("GetPeriodStatistics", Device.GetPeriodStatistics);
+        interfaceRequired->AddFunction("Freeze", Device.Freeze);
+        interfaceRequired->AddFunction("SetGravityCompensation", Device.SetGravityCompensation);
+        interfaceRequired->AddFunction("SetWrenchBody", Device.SetWrenchBody);
     }
     setupUi();
     startTimer(TimerPeriodInMilliseconds); // ms
@@ -103,26 +111,19 @@ void mtsForceDimensionQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
 
 void mtsForceDimensionQtWidget::setupUi(void)
 {
-    QVBoxLayout * mainLayout = new QVBoxLayout;
+    QHBoxLayout * mainLayout = new QHBoxLayout;
 
-    // Side by side for 3D position and timing
-    QHBoxLayout * topLayout = new QHBoxLayout;
-    mainLayout->addLayout(topLayout);
+    // Side by side for 3D position, gripper...
+    QVBoxLayout * controlLayout = new QVBoxLayout;
+    mainLayout->addLayout(controlLayout);
 
     // 3D position
     QFRPositionCartesianWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
-    topLayout->addWidget(QFRPositionCartesianWidget);
-
-    // Timing
-    QVBoxLayout * timingLayout = new QVBoxLayout();
-    QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();
-    timingLayout->addWidget(QMIntervalStatistics);
-    timingLayout->addStretch();
-    topLayout->addLayout(timingLayout);
+    controlLayout->addWidget(QFRPositionCartesianWidget);
 
     // Vectors of values
     QGridLayout * gridLayout = new QGridLayout;
-    mainLayout->addLayout(gridLayout);
+    controlLayout->addLayout(gridLayout);
 
     gridLayout->setSpacing(1);
     int row = 0;
@@ -131,7 +132,45 @@ void mtsForceDimensionQtWidget::setupUi(void)
     gridLayout->addWidget(QLPositionGripper, row, 1);
     row++;
 
+    QPushButton * freezeButton = new QPushButton("Freeze");
+    controlLayout->addWidget(freezeButton);
+    connect(freezeButton, SIGNAL(clicked()),
+            this, SLOT(SlotFreeze()));
+
+    QPushButton * gravityCompensationButton = new QPushButton("Gravity compensation");
+    controlLayout->addWidget(gravityCompensationButton);
+    connect(gravityCompensationButton, SIGNAL(clicked()),
+            this, SLOT(SlotGravityCompensation()));
+
+    controlLayout->addStretch();
+
+    // System
+    QVBoxLayout * systemLayout = new QVBoxLayout();
+    mainLayout->addLayout(systemLayout);
+
+    // Timing
+    QMIntervalStatistics = new mtsIntervalStatisticsQtWidget();
+    systemLayout->addWidget(QMIntervalStatistics);
+
+    // Messages
+    QMMessage->setupUi();
+    systemLayout->addWidget(QMMessage);
+
+    systemLayout->addStretch();
+
     setLayout(mainLayout);
-    setWindowTitle("Device");
+    setWindowTitle("sawForceDimensionSDK");
     resize(sizeHint());
+}
+
+void mtsForceDimensionQtWidget::SlotFreeze(void)
+{
+    Device.Freeze();
+}
+
+void mtsForceDimensionQtWidget::SlotGravityCompensation(void)
+{
+    Device.SetGravityCompensation(true);
+    prmForceCartesianSet wrench;
+    Device.SetWrenchBody(wrench);
 }

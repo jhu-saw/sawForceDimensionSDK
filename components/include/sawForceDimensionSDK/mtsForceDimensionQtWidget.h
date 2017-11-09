@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2014-07-21
 
-  (C) Copyright 2014-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -23,7 +23,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmStateJoint.h>
 #include <cisstVector/vctQtWidgetFrame.h>
-#include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
+#include <cisstMultiTask/mtsIntervalStatisticsQtWidget.h>
+#include <cisstMultiTask/mtsMessageQtWidget.h>
 
 #include <QWidget>
 #include <QLabel>
@@ -60,6 +61,9 @@ protected:
         mtsFunctionRead GetPositionCartesian;
         mtsFunctionRead GetStateGripper;
         mtsFunctionRead GetPeriodStatistics;
+        mtsFunctionVoid Freeze;
+        mtsFunctionWrite SetGravityCompensation;
+        mtsFunctionWrite SetWrenchBody;
     } Device;
 
 private:
@@ -71,7 +75,14 @@ private:
 
     // Timing
     mtsIntervalStatistics IntervalStatistics;
-    mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
+    mtsIntervalStatisticsQtWidget * QMIntervalStatistics;
+
+    // Messages
+    mtsMessageQtWidget * QMMessage;
+
+ private slots:
+    void SlotFreeze(void);
+    void SlotGravityCompensation(void);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsForceDimensionQtWidget);

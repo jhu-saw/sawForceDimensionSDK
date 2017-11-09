@@ -426,6 +426,8 @@ void mtsForceDimensionDevice::UnlockOrientation(void)
 
 void mtsForceDimensionDevice::Freeze(void)
 {
+    SetControlMode(mtsForceDimension::CARTESIAN_POSITION);
+    mDesiredPosition.Goal().Assign(mPositionCartesian.Position());
 }
 
 void mtsForceDimensionDevice::LockOrientation(const vctMatRot3 & orientation)
@@ -436,7 +438,6 @@ void mtsForceDimensionDevice::LockOrientation(const vctMatRot3 & orientation)
     // Rc * Ro = Rd
     // Ro = Rc_transpose * Rd
     mRotationOffset = mRawOrientation.Inverse() * orientation;
-        
 }
 
 void mtsForceDimensionDevice::SetGravityCompensation(const bool & gravity)
