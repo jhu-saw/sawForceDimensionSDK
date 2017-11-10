@@ -138,6 +138,8 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
     mStateTable->AddData(mVelocityCartesian, "VelocityCartesian");
     mStateTable->AddData(mForceTorqueCartesian, "ForceTorqueCartesian");
     mStateGripper.Position().SetSize(1);
+    mStateGripper.Velocity().SetSize(1);
+    mStateGripper.Effort().SetSize(1);
     mStateTable->AddData(mStateGripper, "StateGripper");
 
     if (mInterface) {
@@ -299,18 +301,20 @@ void mtsForceDimensionDevice::GetRobotData(void)
     mVelocityCartesian.SetValid(true);
 
     // force
-    dhdGetForceAndTorque(&mForceTorqueCartesian.Force()[0],
-                         &mForceTorqueCartesian.Force()[1],
-                         &mForceTorqueCartesian.Force()[2],
-                         &mForceTorqueCartesian.Force()[3],
-                         &mForceTorqueCartesian.Force()[4],
-                         &mForceTorqueCartesian.Force()[5],
-                         mDeviceId);
+    dhdGetForceAndTorqueAndGripperForce(&mForceTorqueCartesian.Force()[0],
+                                        &mForceTorqueCartesian.Force()[1],
+                                        &mForceTorqueCartesian.Force()[2],
+                                        &mForceTorqueCartesian.Force()[3],
+                                        &mForceTorqueCartesian.Force()[4],
+                                        &mForceTorqueCartesian.Force()[5],
+                                        &mStateGripper.Effort().at(0),
+                                        mDeviceId);
     mForceTorqueCartesian.SetValid(true);
 
     // gripper
     dhdGetGripperAngleRad(&mStateGripper.Position().at(0), mDeviceId);
     mStateGripper.Position().at(0) *= mGripperDirection;
+    dhdGetGripperAngularVelocityRad(&mStateGripper.Velocity().at(0),mDeviceId);
 
     // buttons
     uint currentButtonMask = dhdGetButtonMask(mDeviceId);
