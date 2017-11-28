@@ -83,13 +83,17 @@ int main(int argc, char * argv[])
     // device
     mtsForceDimensionQtWidget * deviceWidget;
 
+    // namespace
+    std::string rosNamespace = "/force_dimension/";
+
     // configure all components
-    typedef std::list<std::string> DevicesType;
-    DevicesType devices = forceDimension->GetDeviceNames();
-    const DevicesType::const_iterator end = devices.end();
-    DevicesType::const_iterator device;
+    typedef std::list<std::string> NamesType;
+    NamesType devices;
+    forceDimension->GetDeviceNames(devices);
+    const NamesType::const_iterator endDevices = devices.end();
+    NamesType::const_iterator device;
     for (device = devices.begin();
-         device != end;
+         device != endDevices;
          ++device) {
         // Qt
         deviceWidget = new mtsForceDimensionQtWidget(*device + "-gui");
@@ -101,19 +105,37 @@ int main(int argc, char * argv[])
 
         rosBridge->AddPublisherFromCommandRead<prmPositionCartesianGet, geometry_msgs::PoseStamped>
             (*device, "GetPositionCartesian",
-             "/force_dimension/" + *device + "/position_cartesian_current");
+             rosNamespace + *device + "/position_cartesian_current");
         // ROS
         rosBridge->AddPublisherFromCommandRead<prmVelocityCartesianGet, geometry_msgs::TwistStamped>
             (*device, "GetVelocityCartesian",
-             "/force_dimension/" + *device + "/twist_body_current");
+             rosNamespace + *device + "/twist_body_current");
         rosBridge->AddPublisherFromCommandRead<prmForceCartesianGet, geometry_msgs::WrenchStamped>
             (*device, "GetWrenchBody",
-             "/force_dimension/" + *device + "/wrench_body_current");
+             rosNamespace + *device + "/wrench_body_current");
         rosBridge->AddPublisherFromCommandRead<prmStateJoint, sensor_msgs::JointState>
             (*device, "GetStateGripper",
-             "/force_dimension/" + *device + "/state_gripper_current");
+             rosNamespace + *device + "/state_gripper_current");
+        // Connect
         componentManager->Connect(rosBridge->GetName(), *device,
                                   forceDimension->GetName(), *device);
+
+        // Buttons
+        NamesType buttons;
+        forceDimension->GetButtonNames(*device, buttons);
+        const NamesType::iterator endButtons = buttons.end();
+        NamesType::iterator button;
+        for (button = buttons.begin();
+             button != endButtons;
+             ++button) {
+            // sawForceDimension button names are device-button, use device/button for ROS
+            std::string rosButton = *button;
+            std::replace(rosButton.begin(), rosButton.end(), '-', '/');
+            rosBridge->AddPublisherFromEventWrite<prmEventButton, sensor_msgs::Joy>
+                (*button, "Button", "/force_dimension/" + rosButton);
+            componentManager->Connect(rosBridge->GetName(), *button,
+                                      forceDimension->GetName(), *button);
+        }
     }
 
     // create and start all components

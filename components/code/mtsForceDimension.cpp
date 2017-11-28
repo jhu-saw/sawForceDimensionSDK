@@ -53,6 +53,8 @@ public:
         return mName;
     }
 
+    void GetButtonNames(std::list<std::string> & result) const;
+
 protected:
     void GetRobotData(void);
     void SetControlMode(const mtsForceDimension::ControlModeType & mode);
@@ -271,6 +273,18 @@ void mtsForceDimensionDevice::Run(void)
 void mtsForceDimensionDevice::Cleanup(void)
 {
     dhdClose(mDeviceId);
+}
+
+void mtsForceDimensionDevice::GetButtonNames(std::list<std::string> & result) const
+{
+    result.clear();
+    const ButtonsData::const_iterator end = mButtonCallbacks.end();
+    ButtonsData::const_iterator button;
+    for (button = mButtonCallbacks.begin();
+         button != end;
+         ++button) {
+        result.push_back((*button)->Name);
+    }
 }
 
 void mtsForceDimensionDevice::GetRobotData(void)
@@ -628,9 +642,9 @@ void mtsForceDimension::Startup(void)
 }
 
 
-std::list<std::string> mtsForceDimension::GetDeviceNames(void) const
+void mtsForceDimension::GetDeviceNames(std::list<std::string> & result) const
 {
-    std::list<std::string> result;
+    result.clear();
     const DevicesType::const_iterator end = mDevices.end();
     DevicesType::const_iterator device;
     for (device = mDevices.begin();
@@ -638,9 +652,23 @@ std::list<std::string> mtsForceDimension::GetDeviceNames(void) const
          ++device) {
         result.push_back((*device)->Name());
     }
-    return result;
 }
 
+void mtsForceDimension::GetButtonNames(const std::string & deviceName,
+                                       std::list<std::string> & result) const
+{
+    result.clear();
+    const DevicesType::const_iterator end = mDevices.end();
+    DevicesType::const_iterator device;
+    for (device = mDevices.begin();
+         device != end;
+         ++device) {
+        if ((*device)->Name() == deviceName) {
+            (*device)->GetButtonNames(result);
+            return;
+        }
+    }
+}
 
 void mtsForceDimension::Run(void)
 {

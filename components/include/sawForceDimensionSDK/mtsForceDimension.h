@@ -43,7 +43,9 @@ class CISST_EXPORT mtsForceDimension: public mtsTaskContinuous
     ~mtsForceDimension(void) {};
 
     void Configure(const std::string & filename = "");
-    std::list<std::string> GetDeviceNames(void) const;
+    void GetDeviceNames(std::list<std::string> & result) const;
+    void GetButtonNames(const std::string & deviceName,
+                        std::list<std::string> & result) const;
     void Startup(void);
     void Run(void);
     void Cleanup(void);

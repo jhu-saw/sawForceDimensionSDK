@@ -19,12 +19,14 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsForceDimensionQtWidget_h
 #define _mtsForceDimensionQtWidget_h
 
-#include <cisstMultiTask/mtsComponent.h>
-#include <cisstParameterTypes/prmPositionCartesianGet.h>
-#include <cisstParameterTypes/prmStateJoint.h>
 #include <cisstVector/vctQtWidgetFrame.h>
+#include <cisstVector/vctForceTorqueQtWidget.h>
+#include <cisstMultiTask/mtsComponent.h>
 #include <cisstMultiTask/mtsIntervalStatisticsQtWidget.h>
 #include <cisstMultiTask/mtsMessageQtWidget.h>
+#include <cisstParameterTypes/prmPositionCartesianGet.h>
+#include <cisstParameterTypes/prmForceCartesianGet.h>
+#include <cisstParameterTypes/prmStateJoint.h>
 
 #include <QWidget>
 #include <QLabel>
@@ -59,6 +61,7 @@ private:
 protected:
     struct {
         mtsFunctionRead GetPositionCartesian;
+        mtsFunctionRead GetWrenchBody;
         mtsFunctionRead GetStateGripper;
         mtsFunctionRead GetPeriodStatistics;
         mtsFunctionVoid Freeze;
@@ -68,9 +71,11 @@ protected:
 
 private:
     prmPositionCartesianGet PositionCartesian;
+    prmForceCartesianGet Wrench;
     prmStateJoint StateGripper;
 
     vctQtWidgetFrameDoubleRead * QFRPositionCartesianWidget;
+    vctForceTorqueQtWidget * QFTWidget;
     QLabel * QLPositionGripper;
 
     // Timing

@@ -74,12 +74,13 @@ int main(int argc, char * argv[])
     mtsForceDimensionQtWidget * deviceWidget;
 
     // Qt Widget(s)
-    typedef std::list<std::string> DevicesType;
-    DevicesType devices = forceDimension->GetDeviceNames();
-    const DevicesType::const_iterator end = devices.end();
-    DevicesType::const_iterator device;
+    typedef std::list<std::string> NamesType;
+    NamesType devices;
+    forceDimension->GetDeviceNames(devices);
+    const NamesType::const_iterator endDevices = devices.end();
+    NamesType::const_iterator device;
     for (device = devices.begin();
-         device != end;
+         device != endDevices;
          ++device) {
         deviceWidget = new mtsForceDimensionQtWidget(*device + "-gui");
         deviceWidget->Configure();

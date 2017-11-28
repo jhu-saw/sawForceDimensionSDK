@@ -43,6 +43,7 @@ mtsForceDimensionQtWidget::mtsForceDimensionQtWidget(const std::string & compone
     if (interfaceRequired) {
         QMMessage->SetInterfaceRequired(interfaceRequired);
         interfaceRequired->AddFunction("GetPositionCartesian", Device.GetPositionCartesian);
+        interfaceRequired->AddFunction("GetWrenchBody", Device.GetWrenchBody);
         interfaceRequired->AddFunction("GetStateGripper", Device.GetStateGripper);
         interfaceRequired->AddFunction("GetPeriodStatistics", Device.GetPeriodStatistics);
         interfaceRequired->AddFunction("Freeze", Device.Freeze);
@@ -94,16 +95,19 @@ void mtsForceDimensionQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
 
     mtsExecutionResult executionResult;
     executionResult = Device.GetPositionCartesian(PositionCartesian);
-    if (!executionResult) {
-        CMN_LOG_CLASS_RUN_ERROR << ".GetPositionCartesian failed, \""
-                                << executionResult << "\"" << std::endl;
-    }
-    else {
+    if (executionResult) {
         QFRPositionCartesianWidget->SetValue(PositionCartesian.Position());
     }
 
+    executionResult = Device.GetWrenchBody(Wrench);
+    if (executionResult) {
+        QFTWidget->SetValue(Wrench.F(), Wrench.T(), Wrench.Timestamp());
+    }
+
     executionResult = Device.GetStateGripper(StateGripper);
-    QLPositionGripper->setNum(StateGripper.Position().at(0) * cmn180_PI);
+    if (executionResult) {
+        QLPositionGripper->setNum(StateGripper.Position().at(0) * cmn180_PI);
+    }
 
     Device.GetPeriodStatistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
@@ -120,6 +124,10 @@ void mtsForceDimensionQtWidget::setupUi(void)
     // 3D position
     QFRPositionCartesianWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
     controlLayout->addWidget(QFRPositionCartesianWidget);
+
+    // Wrench
+    QFTWidget = new vctForceTorqueQtWidget();
+    controlLayout->addWidget(QFTWidget);
 
     // Vectors of values
     QGridLayout * gridLayout = new QGridLayout;
