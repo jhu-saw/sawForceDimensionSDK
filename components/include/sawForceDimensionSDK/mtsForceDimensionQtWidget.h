@@ -19,12 +19,12 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsForceDimensionQtWidget_h
 #define _mtsForceDimensionQtWidget_h
 
-#include <cisstVector/vctQtWidgetFrame.h>
 #include <cisstVector/vctForceTorqueQtWidget.h>
 #include <cisstMultiTask/mtsComponent.h>
 #include <cisstMultiTask/mtsIntervalStatisticsQtWidget.h>
 #include <cisstMultiTask/mtsMessageQtWidget.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
+#include <cisstParameterTypes/prmPositionCartesianGetQtWidget.h>
 #include <cisstParameterTypes/prmForceCartesianGet.h>
 #include <cisstParameterTypes/prmStateJoint.h>
 
@@ -74,7 +74,7 @@ private:
     prmForceCartesianGet Wrench;
     prmStateJoint StateGripper;
 
-    vctQtWidgetFrameDoubleRead * QFRPositionCartesianWidget;
+    prmPositionCartesianGetQtWidget * QPCGWidget;
     vctForceTorqueQtWidget * QFTWidget;
     QLabel * QLPositionGripper;
 

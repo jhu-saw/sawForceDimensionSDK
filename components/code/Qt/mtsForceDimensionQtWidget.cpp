@@ -96,7 +96,7 @@ void mtsForceDimensionQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     mtsExecutionResult executionResult;
     executionResult = Device.GetPositionCartesian(PositionCartesian);
     if (executionResult) {
-        QFRPositionCartesianWidget->SetValue(PositionCartesian.Position());
+        QPCGWidget->SetValue(PositionCartesian);
     }
 
     executionResult = Device.GetWrenchBody(Wrench);
@@ -122,8 +122,8 @@ void mtsForceDimensionQtWidget::setupUi(void)
     mainLayout->addLayout(controlLayout);
 
     // 3D position
-    QFRPositionCartesianWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
-    controlLayout->addWidget(QFRPositionCartesianWidget);
+    QPCGWidget = new prmPositionCartesianGetQtWidget();
+    controlLayout->addWidget(QPCGWidget);
 
     // Wrench
     QFTWidget = new vctForceTorqueQtWidget();
