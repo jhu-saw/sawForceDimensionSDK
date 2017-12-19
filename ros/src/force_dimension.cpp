@@ -19,6 +19,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnUnits.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
+#include <cisstCommon/cmnQt.h>
 #include <cisstMultiTask/mtsTaskManager.h>
 #include <sawForceDimensionSDK/mtsForceDimension.h>
 #include <sawForceDimensionSDK/mtsForceDimensionQtWidget.h>
@@ -71,11 +72,12 @@ int main(int argc, char * argv[])
     componentManager->AddComponent(forceDimension);
 
     // ROS bridge
-    mtsROSBridge * rosBridge = new mtsROSBridge("ForceDimensionBridge", rosPeriod, true);
+    mtsROSBridge * rosBridge = new mtsROSBridge("ForceDimensionBridge", rosPeriod, true, false);
     componentManager->AddComponent(rosBridge);
 
     // create a Qt user interface
     QApplication application(argc, argv);
+    cmnQt::QApplicationExitsOnCtrlC();
 
     // organize all widgets in a tab widget
     QTabWidget * tabWidget = new QTabWidget;
