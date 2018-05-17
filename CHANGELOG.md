@@ -1,6 +1,21 @@
 Change log
 ==========
 
+1.1.0 (2018-05-16)
+==================
+
+* API changes:
+  * None
+* Deprecated features:
+  * None
+* New features:
+  * Get velocity and effort for gripper state
+  * Updated Qt widgets for cartesian position and wrench
+  * Added ROS topics for buttons
+  * ROS bridge should now exit on ctrl-c
+* Bug fixes:
+  * None
+
 1.0.0 (2017-11-08)
 ==================
 
