@@ -22,7 +22,7 @@ set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstParameterTypes)
 
 # find cisst and make sure the required libraries have been compiled
-find_package (cisst 1.0.9 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.0.10 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 
@@ -36,7 +36,7 @@ if (cisst_FOUND_AS_REQUIRED)
   endif ()
 
   # sawForceDimensionSDK has been compiled within cisst, we should find it automatically
-  find_package (sawForceDimensionSDK 1.0.0)
+  find_package (sawForceDimensionSDK 1.1.0)
 
   if (sawForceDimensionSDK_FOUND AND CISST_HAS_QT)
 

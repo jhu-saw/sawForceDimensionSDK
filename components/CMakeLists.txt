@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2016-2018 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -20,7 +20,7 @@ set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstMultiTask
                               cisstParameterTypes)
 
-find_package (cisst 1.0.9 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.0.10 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 
@@ -91,7 +91,7 @@ if (cisst_FOUND_AS_REQUIRED)
 
     # Set the version number
     set (sawForceDimensionSDK_VERSION_MAJOR "1")
-    set (sawForceDimensionSDK_VERSION_MINOR "0")
+    set (sawForceDimensionSDK_VERSION_MINOR "1")
     set (sawForceDimensionSDK_VERSION_PATCH "0")
     set (sawForceDimensionSDK_VERSION "${sawForceDimensionSDK_VERSION_MAJOR}.${sawForceDimensionSDK_VERSION_MINOR}.${sawForceDimensionSDK_VERSION_PATCH}")
 
