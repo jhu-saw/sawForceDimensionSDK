@@ -64,7 +64,7 @@ protected:
     bool m_enabled; // somewhat redundant with m_device_state but faster to test in runtime
     mtsStdString m_device_state;
 
-    void SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition);
+    void servo_cp(const prmPositionCartesianSet & newPosition);
     void servo_cf(const prmForceCartesianSet & newForce);
     void gripper_servo_jf(const prmForceTorqueJointSet & effortGripper);
     void SetGravityCompensation(const bool & gravityCompensation);
@@ -92,7 +92,7 @@ protected:
 
     double m_gripper_direction;
 
-    prmPositionCartesianGet m_measured_cp;
+    prmPositionCartesianGet m_measured_cp, m_setpoint_cp;
     prmVelocityCartesianGet m_measured_cv;
     prmForceCartesianGet m_measured_cf;
 
@@ -131,12 +131,15 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
 
     m_measured_cp.SetReferenceFrame(m_name + "_base");
     m_measured_cp.SetMovingFrame(m_name);
+    m_setpoint_cp.SetReferenceFrame(m_name + "_base");
+    m_setpoint_cp.SetMovingFrame(m_name);
 
     m_state_table->SetAutomaticAdvance(false);
     m_state_table->AddData(m_device_state, "device_state");
     m_state_table->AddData(m_measured_cp, "measured_cp");
     m_state_table->AddData(m_measured_cv, "measured_cv");
     m_state_table->AddData(m_measured_cf, "measured_cf");
+    m_state_table->AddData(m_setpoint_cp, "setpoint_cp");
     m_gripper_measured_js.Position().SetSize(1);
     m_gripper_measured_js.Velocity().SetSize(1);
     m_gripper_measured_js.Effort().SetSize(1);
@@ -146,17 +149,17 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
         m_interface->AddMessageEvents();
         m_interface->AddCommandReadState(*m_state_table, m_measured_cp,
                                          "measured_cp");
-        m_interface->AddCommandReadState(*m_state_table, m_measured_cp,
-                                         "GetPositionCartesianDesired");
         m_interface->AddCommandReadState(*m_state_table, m_measured_cv,
                                          "measured_cv");
         m_interface->AddCommandReadState(*m_state_table, m_measured_cf,
                                          "measured_cf");
         m_interface->AddCommandReadState(*m_state_table, m_gripper_measured_js,
                                          "gripper_measured_js");
+        m_interface->AddCommandReadState(*m_state_table, m_setpoint_cp,
+                                         "setpoint_cp");
 
-        m_interface->AddCommandWrite(&mtsForceDimensionDevice::SetPositionGoalCartesian,
-                                     this, "SetPositionGoalCartesian");
+        m_interface->AddCommandWrite(&mtsForceDimensionDevice::servo_cp,
+                                     this, "servo_cp");
         m_interface->AddCommandWrite(&mtsForceDimensionDevice::servo_cf,
                                      this, "servo_cf");
         m_interface->AddCommandWrite(&mtsForceDimensionDevice::gripper_servo_jf,
@@ -246,14 +249,14 @@ void mtsForceDimensionDevice::Run(void)
                                             m_servo_cf.Force()[5],
                                             m_gripper_direction * m_gripper_servo_jf,
                                             m_device_id);
+        m_setpoint_cp.Position().Assign(m_measured_cp.Position());
         break;
     case mtsForceDimension::CARTESIAN_POSITION:
         if (m_new_servo_cp) {
-            drdMoveToPos(m_servo_cp.Goal().Translation().X(),
-                         m_servo_cp.Goal().Translation().Y(),
-                         m_servo_cp.Goal().Translation().Z(),
-                         false,
-                         m_device_id);
+            drdTrackPos(m_servo_cp.Goal().Translation().X(),
+                        m_servo_cp.Goal().Translation().Y(),
+                        m_servo_cp.Goal().Translation().Z(),
+                        m_device_id);
             m_new_servo_cp = false;
         }
         break;
@@ -420,12 +423,11 @@ void mtsForceDimensionDevice::gripper_servo_jf(const prmForceTorqueJointSet & ef
     m_gripper_servo_jf = effortGripper.ForceTorque().at(0) * m_gripper_direction;
 }
 
-void mtsForceDimensionDevice::SetPositionGoalCartesian(const prmPositionCartesianSet & position)
+void mtsForceDimensionDevice::servo_cp(const prmPositionCartesianSet & position)
 {
     SetControlMode(mtsForceDimension::CARTESIAN_POSITION);
     m_servo_cp = position;
     m_new_servo_cp = true;
-
     m_rotation_offset = mRawOrientation.Inverse() * position.Goal().Rotation();
 }
 
