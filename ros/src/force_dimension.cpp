@@ -123,6 +123,12 @@ int main(int argc, char * argv[])
         pub_bridge->AddPublisherFromCommandRead<prmStateJoint, sensor_msgs::JointState>
             (name, "gripper_measured_js",
              deviceNamespace + "gripper/measured_js");
+        pub_bridge->AddPublisherFromCommandRead<prmPositionCartesianGet, geometry_msgs::TransformStamped>
+            (name, "setpoint_cp",
+             deviceNamespace + "setpoint_cp");
+        spin_bridge->AddSubscriberToCommandWrite<prmPositionCartesianSet, geometry_msgs::TransformStamped>
+            (name, "servo_cp",
+             deviceNamespace + "servo_cp");
         spin_bridge->AddSubscriberToCommandWrite<prmForceCartesianSet, geometry_msgs::WrenchStamped>
             (name, "servo_cf",
              deviceNamespace + "servo_cf");
@@ -137,6 +143,14 @@ int main(int argc, char * argv[])
         spin_bridge->AddServiceFromCommandRead<std::string, std_srvs::Trigger>
             (name, "device_state",
              deviceNamespace + "device_state");
+
+        // messages
+        spin_bridge->AddLogFromEventWrite(name, "Error",
+                                          mtsROSEventWriteLog::ROS_LOG_ERROR);
+        spin_bridge->AddLogFromEventWrite(name, "Warning",
+                                          mtsROSEventWriteLog::ROS_LOG_WARN);
+        spin_bridge->AddLogFromEventWrite(name, "Status",
+                                          mtsROSEventWriteLog::ROS_LOG_INFO);
 
         // Connect
         componentManager->Connect(pub_bridge->GetName(), name,
