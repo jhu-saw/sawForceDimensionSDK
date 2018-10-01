@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-11-10
 
-  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -50,7 +50,7 @@ public:
     void Run(void);
     void Cleanup(void);
     inline const std::string & Name(void) const {
-        return mName;
+        return m_name;
     }
 
     void GetButtonNames(std::list<std::string> & result) const;
@@ -59,32 +59,26 @@ protected:
     void GetRobotData(void);
     void SetControlMode(const mtsForceDimension::ControlModeType & mode);
 
-    void SetDesiredState(const std::string & state);
-    void GetDesiredState(std::string & state) const;
-    void GetCurrentState(std::string & state) const;
+    // crtk state
+    void set_device_state(const std::string & state);
+    bool m_enabled; // somewhat redundant with m_device_state but faster to test in runtime
+    mtsStdString m_device_state;
 
-    std::string mArmState;
-
-    void SetPositionCartesian(const prmForceCartesianSet & desiredForceTorque);
     void SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition);
-    void SetWrenchBody(const prmForceCartesianSet & newForce);
-    void SetEffortGripper(const prmForceTorqueJointSet & effortGripper);
+    void servo_cf(const prmForceCartesianSet & newForce);
+    void gripper_servo_jf(const prmForceTorqueJointSet & effortGripper);
     void SetGravityCompensation(const bool & gravityCompensation);
     void LockOrientation(const vctMatRot3 & orientation);
     void UnlockOrientation(void);
     void Freeze(void);
 
-    struct {
-        mtsFunctionWrite DesiredState;
-        mtsFunctionWrite CurrentState;
-    } MessageEvents;
+    mtsFunctionWrite m_state_event;
 
-    int mDeviceId;
-    std::string mDeviceIdString;
-    std::string mName;
-    mtsStateTable * mStateTable;
-    mtsInterfaceProvided * mInterface;
-    std::string mSystemName;
+    int m_device_id;
+    std::string m_device_id_string;
+    std::string m_name;
+    mtsStateTable * m_state_table;
+    mtsInterfaceProvided * m_interface;
 
     uint mPreviousButtonMask;
     struct ButtonData {
@@ -96,21 +90,21 @@ protected:
 
     ButtonsData mButtonCallbacks;
 
-    double mGripperDirection;
+    double m_gripper_direction;
 
-    prmPositionCartesianGet mPositionCartesian;
-    prmVelocityCartesianGet mVelocityCartesian;
-    prmForceCartesianGet mForceTorqueCartesian;
+    prmPositionCartesianGet m_measured_cp;
+    prmVelocityCartesianGet m_measured_cv;
+    prmForceCartesianGet m_measured_cf;
 
-    prmStateJoint mStateGripper;
-    vctMatRot3 mRotationOffset, mRawOrientation;
+    prmStateJoint m_gripper_measured_js;
+    vctMatRot3 m_rotation_offset, mRawOrientation;
 
     mtsForceDimension::ControlModeType mControlMode;
 
-    bool mNewPositionGoal;
-    prmPositionCartesianSet mDesiredPosition;
-    prmForceCartesianSet mDesiredWrench;
-    double mDesiredEffortGripper;
+    bool m_new_servo_cp;
+    prmPositionCartesianSet m_servo_cp;
+    prmForceCartesianSet m_servo_cf;
+    double m_gripper_servo_jf;
 };
 
 mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
@@ -118,75 +112,74 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
                                                  mtsStateTable * stateTable,
                                                  mtsInterfaceProvided * interfaceProvided,
                                                  const ButtonInterfaces & buttonInterfaces):
-    mDeviceId(deviceId),
-    mName(name),
-    mStateTable(stateTable),
-    mInterface(interfaceProvided)
+    m_device_id(deviceId),
+    m_name(name),
+    m_state_table(stateTable),
+    m_interface(interfaceProvided)
 {
     std::stringstream idString;
     idString << deviceId;
-    mDeviceIdString = idString.str();
+    m_device_id_string = idString.str();
 
-    mArmState = "POWERED";
-    mNewPositionGoal = false;
+    m_device_state = "DISABLED";
+    m_new_servo_cp = false;
     mControlMode = mtsForceDimension::UNDEFINED;
 
-    mDesiredWrench.Force().SetAll(0.0);
-    mDesiredEffortGripper = 0.0;
-    mGripperDirection = 1.0;
+    m_servo_cf.Force().SetAll(0.0);
+    m_gripper_servo_jf = 0.0;
+    m_gripper_direction = 1.0;
 
-    mStateTable->SetAutomaticAdvance(false);
-    mStateTable->AddData(mPositionCartesian, "PositionCartesian");
-    mStateTable->AddData(mVelocityCartesian, "VelocityCartesian");
-    mStateTable->AddData(mForceTorqueCartesian, "ForceTorqueCartesian");
-    mStateGripper.Position().SetSize(1);
-    mStateGripper.Velocity().SetSize(1);
-    mStateGripper.Effort().SetSize(1);
-    mStateTable->AddData(mStateGripper, "StateGripper");
+    m_measured_cp.SetReferenceFrame(m_name + "_base");
+    m_measured_cp.SetMovingFrame(m_name);
 
-    if (mInterface) {
-        mInterface->AddMessageEvents();
-        mInterface->AddCommandReadState(*mStateTable, mPositionCartesian,
-                                        "GetPositionCartesian");
-        mInterface->AddCommandReadState(*mStateTable, mPositionCartesian,
-                                        "GetPositionCartesianDesired");
-        mInterface->AddCommandReadState(*mStateTable, mVelocityCartesian,
-                                        "GetVelocityCartesian");
-        mInterface->AddCommandReadState(*mStateTable, mForceTorqueCartesian,
-                                        "GetWrenchBody");
-        mInterface->AddCommandReadState(*mStateTable, mStateGripper,
-                                        "GetStateGripper");
+    m_state_table->SetAutomaticAdvance(false);
+    m_state_table->AddData(m_device_state, "device_state");
+    m_state_table->AddData(m_measured_cp, "measured_cp");
+    m_state_table->AddData(m_measured_cv, "measured_cv");
+    m_state_table->AddData(m_measured_cf, "measured_cf");
+    m_gripper_measured_js.Position().SetSize(1);
+    m_gripper_measured_js.Velocity().SetSize(1);
+    m_gripper_measured_js.Effort().SetSize(1);
+    m_state_table->AddData(m_gripper_measured_js, "gripper_measured_js");
 
-        mInterface->AddCommandWrite(&mtsForceDimensionDevice::SetPositionGoalCartesian,
-                                    this, "SetPositionGoalCartesian");
-        mInterface->AddCommandWrite(&mtsForceDimensionDevice::SetWrenchBody,
-                                    this, "SetWrenchBody");
-        mInterface->AddCommandWrite(&mtsForceDimensionDevice::SetEffortGripper,
-                                    this, "SetEffortGripper");
-        mInterface->AddCommandWrite(&mtsForceDimensionDevice::SetGravityCompensation,
-                                    this, "SetGravityCompensation");
-        mInterface->AddCommandWrite(&mtsForceDimensionDevice::LockOrientation,
-                                    this, "LockOrientation");
-        mInterface->AddCommandVoid(&mtsForceDimensionDevice::UnlockOrientation,
-                                   this, "UnlockOrientation");
-        mInterface->AddCommandVoid(&mtsForceDimensionDevice::Freeze,
-                                   this, "Freeze");
+    if (m_interface) {
+        m_interface->AddMessageEvents();
+        m_interface->AddCommandReadState(*m_state_table, m_measured_cp,
+                                         "measured_cp");
+        m_interface->AddCommandReadState(*m_state_table, m_measured_cp,
+                                         "GetPositionCartesianDesired");
+        m_interface->AddCommandReadState(*m_state_table, m_measured_cv,
+                                         "measured_cv");
+        m_interface->AddCommandReadState(*m_state_table, m_measured_cf,
+                                         "measured_cf");
+        m_interface->AddCommandReadState(*m_state_table, m_gripper_measured_js,
+                                         "gripper_measured_js");
+
+        m_interface->AddCommandWrite(&mtsForceDimensionDevice::SetPositionGoalCartesian,
+                                     this, "SetPositionGoalCartesian");
+        m_interface->AddCommandWrite(&mtsForceDimensionDevice::servo_cf,
+                                     this, "servo_cf");
+        m_interface->AddCommandWrite(&mtsForceDimensionDevice::gripper_servo_jf,
+                                     this, "gripper_servo_jf");
+        m_interface->AddCommandWrite(&mtsForceDimensionDevice::SetGravityCompensation,
+                                     this, "SetGravityCompensation");
+        m_interface->AddCommandWrite(&mtsForceDimensionDevice::LockOrientation,
+                                     this, "LockOrientation");
+        m_interface->AddCommandVoid(&mtsForceDimensionDevice::UnlockOrientation,
+                                    this, "UnlockOrientation");
+        m_interface->AddCommandVoid(&mtsForceDimensionDevice::Freeze,
+                                    this, "Freeze");
 
         // robot State
-        mInterface->AddCommandWrite(&mtsForceDimensionDevice::SetDesiredState,
-                                    this, "SetDesiredState", std::string(""));
-        mInterface->AddCommandRead(&mtsForceDimensionDevice::GetDesiredState,
-                                   this, "GetDesiredState", std::string(""));
-        mInterface->AddCommandRead(&mtsForceDimensionDevice::GetCurrentState,
-                                   this, "GetCurrentState", std::string(""));
-
-        // events
-        mInterface->AddEventWrite(MessageEvents.DesiredState, "DesiredState", std::string(""));
-        mInterface->AddEventWrite(MessageEvents.CurrentState, "CurrentState", std::string(""));
-
+        m_interface->AddCommandWrite(&mtsForceDimensionDevice::set_device_state,
+                                     this, "set_device_state", std::string(""));
+        m_interface->AddCommandReadState(*m_state_table, m_device_state,
+                                         "device_state");
+        m_interface->AddEventWrite(m_state_event, "device_state",
+                                   std::string());
         // stats
-        mInterface->AddCommandReadState(*mStateTable, mStateTable->PeriodStats,
-                                        "GetPeriodStatistics");
+        m_interface->AddCommandReadState(*m_state_table, m_state_table->PeriodStats,
+                                         "GetPeriodStatistics");
     }
 
     // buttons
@@ -206,38 +199,38 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
 
 void mtsForceDimensionDevice::Startup(void)
 {
-    if (!drdIsInitialized(mDeviceId)) {
-        if (drdAutoInit(mDeviceId) < 0) {
-            mInterface->SendError(mName + ": failed to auto init, last reported error is: "
-                                  + dhdErrorGetLastStr() + " [id:" + mDeviceIdString + "]");
+    if (!drdIsInitialized(m_device_id)) {
+        if (drdAutoInit(m_device_id) < 0) {
+            m_interface->SendError(m_name + ": failed to auto init, last reported error is: "
+                                   + dhdErrorGetLastStr() + " [id:" + m_device_id_string + "]");
         } else {
-            mInterface->SendStatus(mName + ": properly initialized");
+            m_interface->SendStatus(m_name + ": properly initialized");
         }
     }
 
     // set gripper direction
-    if (dhdIsLeftHanded(mDeviceId)) {
-        mGripperDirection = -1.0;
-        mInterface->SendStatus(mName + ": is left handed");
+    if (dhdIsLeftHanded(m_device_id)) {
+        m_gripper_direction = -1.0;
+        m_interface->SendStatus(m_name + ": is left handed");
     } else {
-        mInterface->SendStatus(mName + ": is right handed or symmetrical");
+        m_interface->SendStatus(m_name + ": is right handed or symmetrical");
     }
 
-    drdStop(true, mDeviceId);
+    drdStop(true, m_device_id);
 
     // update current state
-    mStateTable->Start();
+    m_state_table->Start();
     GetRobotData();
     SetControlMode(mtsForceDimension::CARTESIAN_POSITION);
-    mStateTable->Advance();
+    m_state_table->Advance();
 }
 
 void mtsForceDimensionDevice::Run(void)
 {
-    mStateTable->Start();
+    m_state_table->Start();
 
     // process mts commands
-    mInterface->ProcessMailBoxes();
+    m_interface->ProcessMailBoxes();
 
     // get robot data
     GetRobotData();
@@ -245,34 +238,34 @@ void mtsForceDimensionDevice::Run(void)
     // control mode
     switch (mControlMode) {
     case mtsForceDimension::CARTESIAN_EFFORT:
-        dhdSetForceAndTorqueAndGripperForce(mDesiredWrench.Force()[0],
-                                            mDesiredWrench.Force()[1],
-                                            mDesiredWrench.Force()[2],
-                                            mDesiredWrench.Force()[3],
-                                            mDesiredWrench.Force()[4],
-                                            mDesiredWrench.Force()[5],
-                                            mGripperDirection * mDesiredEffortGripper,
-                                            mDeviceId);
+        dhdSetForceAndTorqueAndGripperForce(m_servo_cf.Force()[0],
+                                            m_servo_cf.Force()[1],
+                                            m_servo_cf.Force()[2],
+                                            m_servo_cf.Force()[3],
+                                            m_servo_cf.Force()[4],
+                                            m_servo_cf.Force()[5],
+                                            m_gripper_direction * m_gripper_servo_jf,
+                                            m_device_id);
         break;
     case mtsForceDimension::CARTESIAN_POSITION:
-        if (mNewPositionGoal) {
-            drdMoveToPos(mDesiredPosition.Goal().Translation().X(),
-                         mDesiredPosition.Goal().Translation().Y(),
-                         mDesiredPosition.Goal().Translation().Z(),
+        if (m_new_servo_cp) {
+            drdMoveToPos(m_servo_cp.Goal().Translation().X(),
+                         m_servo_cp.Goal().Translation().Y(),
+                         m_servo_cp.Goal().Translation().Z(),
                          false,
-                         mDeviceId);
-            mNewPositionGoal = false;
+                         m_device_id);
+            m_new_servo_cp = false;
         }
         break;
     default:
         break;
     }
-    mStateTable->Advance();
+    m_state_table->Advance();
 }
 
 void mtsForceDimensionDevice::Cleanup(void)
 {
-    dhdClose(mDeviceId);
+    dhdClose(m_device_id);
 }
 
 void mtsForceDimensionDevice::GetButtonNames(std::list<std::string> & result) const
@@ -291,47 +284,47 @@ void mtsForceDimensionDevice::GetRobotData(void)
 {
     double rotation[3][3];
     // position
-    dhdGetPositionAndOrientationFrame(&mPositionCartesian.Position().Translation().X(),
-                                      &mPositionCartesian.Position().Translation().Y(),
-                                      &mPositionCartesian.Position().Translation().Z(),
+    dhdGetPositionAndOrientationFrame(&m_measured_cp.Position().Translation().X(),
+                                      &m_measured_cp.Position().Translation().Y(),
+                                      &m_measured_cp.Position().Translation().Z(),
                                       rotation,
-                                      mDeviceId);
+                                      m_device_id);
     mRawOrientation.Row(0).Assign(rotation[0]);
     mRawOrientation.Row(1).Assign(rotation[1]);
     mRawOrientation.Row(2).Assign(rotation[2]);
     // apply rotation offset
-    mPositionCartesian.Position().Rotation() = mRawOrientation * mRotationOffset;
-    mPositionCartesian.Valid() = true;
+    m_measured_cp.Position().Rotation() = mRawOrientation * m_rotation_offset;
+    m_measured_cp.Valid() = true;
 
     // velocity
-    dhdGetLinearVelocity(&mVelocityCartesian.VelocityLinear().X(),
-                         &mVelocityCartesian.VelocityLinear().Y(),
-                         &mVelocityCartesian.VelocityLinear().Z(),
-                         mDeviceId);
-    dhdGetAngularVelocityRad(&mVelocityCartesian.VelocityAngular().X(),
-                             &mVelocityCartesian.VelocityAngular().Y(),
-                             &mVelocityCartesian.VelocityAngular().Z(),
-                             mDeviceId);
-    mVelocityCartesian.SetValid(true);
+    dhdGetLinearVelocity(&m_measured_cv.VelocityLinear().X(),
+                         &m_measured_cv.VelocityLinear().Y(),
+                         &m_measured_cv.VelocityLinear().Z(),
+                         m_device_id);
+    dhdGetAngularVelocityRad(&m_measured_cv.VelocityAngular().X(),
+                             &m_measured_cv.VelocityAngular().Y(),
+                             &m_measured_cv.VelocityAngular().Z(),
+                             m_device_id);
+    m_measured_cv.SetValid(true);
 
     // force
-    dhdGetForceAndTorqueAndGripperForce(&mForceTorqueCartesian.Force()[0],
-                                        &mForceTorqueCartesian.Force()[1],
-                                        &mForceTorqueCartesian.Force()[2],
-                                        &mForceTorqueCartesian.Force()[3],
-                                        &mForceTorqueCartesian.Force()[4],
-                                        &mForceTorqueCartesian.Force()[5],
-                                        &mStateGripper.Effort().at(0),
-                                        mDeviceId);
-    mForceTorqueCartesian.SetValid(true);
+    dhdGetForceAndTorqueAndGripperForce(&m_measured_cf.Force()[0],
+                                        &m_measured_cf.Force()[1],
+                                        &m_measured_cf.Force()[2],
+                                        &m_measured_cf.Force()[3],
+                                        &m_measured_cf.Force()[4],
+                                        &m_measured_cf.Force()[5],
+                                        &m_gripper_measured_js.Effort().at(0),
+                                        m_device_id);
+    m_measured_cf.SetValid(true);
 
     // gripper
-    dhdGetGripperAngleRad(&mStateGripper.Position().at(0), mDeviceId);
-    mStateGripper.Position().at(0) *= mGripperDirection;
-    dhdGetGripperAngularVelocityRad(&mStateGripper.Velocity().at(0),mDeviceId);
+    dhdGetGripperAngleRad(&m_gripper_measured_js.Position().at(0), m_device_id);
+    m_gripper_measured_js.Position().at(0) *= m_gripper_direction;
+    dhdGetGripperAngularVelocityRad(&m_gripper_measured_js.Velocity().at(0), m_device_id);
 
     // buttons
-    uint currentButtonMask = dhdGetButtonMask(mDeviceId);
+    uint currentButtonMask = dhdGetButtonMask(m_device_id);
     // if any button pressed
     if (mPreviousButtonMask != currentButtonMask) {
         mPreviousButtonMask = currentButtonMask;
@@ -358,23 +351,22 @@ void mtsForceDimensionDevice::GetRobotData(void)
     }
 }
 
-void mtsForceDimensionDevice::SetDesiredState(const std::string & state)
-{
-    mArmState = state;
-    MessageEvents.DesiredState(state);
-    mInterface->SendStatus(mInterface->GetName() + ": desired state " + state);
-    MessageEvents.CurrentState(state);
-    mInterface->SendStatus(mInterface->GetName() + ": current state " + state);
-}
-
-void mtsForceDimensionDevice::GetDesiredState(std::string & state) const
-{
-    state = mArmState;
-}
-
-void mtsForceDimensionDevice::GetCurrentState(std::string & state) const
-{
-    state = mArmState;
+void mtsForceDimensionDevice::set_device_state(const std::string & state) {
+    if (state == "ENABLED") {
+        m_device_state = "ENABLED";
+        m_enabled = true;
+    } else if (state == "DISABLED") {
+        m_device_state = "DISABLED";
+        m_enabled = false;
+    } else {
+        m_interface->SendStatus(this->m_name + ": requested state \""
+                                + state + "\" is not supported yet");
+    }
+    // always emit event with current device state
+    m_interface->SendStatus(this->m_name
+                            + ": current state is \""
+                            + m_device_state.Data + "\"");
+    m_state_event(m_device_state);
 }
 
 void mtsForceDimensionDevice::SetControlMode(const mtsForceDimension::ControlModeType & mode)
@@ -386,24 +378,24 @@ void mtsForceDimensionDevice::SetControlMode(const mtsForceDimension::ControlMod
     // transition to new mode
     switch (mode) {
     case mtsForceDimension::CARTESIAN_POSITION:
-        mNewPositionGoal = false;
-        drdRegulatePos(true, mDeviceId);
-        drdRegulateRot(false, mDeviceId);
-        drdRegulateGrip(false, mDeviceId);
-        if (drdStart(mDeviceId) < 0) {
-            mInterface->SendError(mName + ": failed to start control look, "
-                                  + dhdErrorGetLastStr() + " [id:" + mDeviceIdString + "]");
+        m_new_servo_cp = false;
+        drdRegulatePos(true, m_device_id);
+        drdRegulateRot(false, m_device_id);
+        drdRegulateGrip(false, m_device_id);
+        if (drdStart(m_device_id) < 0) {
+            m_interface->SendError(m_name + ": failed to start control look, "
+                                   + dhdErrorGetLastStr() + " [id:" + m_device_id_string + "]");
         }
         // start from current position
-        mDesiredPosition.Goal().Assign(mPositionCartesian.Position());
-        mNewPositionGoal = true;
+        m_servo_cp.Goal().Assign(m_measured_cp.Position());
+        m_new_servo_cp = true;
         break;
     case mtsForceDimension::CARTESIAN_EFFORT:
-        drdRegulatePos(false, mDeviceId);
-        drdStop(true, mDeviceId);
+        drdRegulatePos(false, m_device_id);
+        drdStop(true, m_device_id);
         // start with 0 forces
-        mDesiredWrench.Force().SetAll(0.0);
-        mDesiredEffortGripper = 0.0;
+        m_servo_cf.Force().SetAll(0.0);
+        m_gripper_servo_jf = 0.0;
         break;
     default:
         break;
@@ -412,40 +404,40 @@ void mtsForceDimensionDevice::SetControlMode(const mtsForceDimension::ControlMod
     mControlMode = mode;
 }
 
-void mtsForceDimensionDevice::SetWrenchBody(const prmForceCartesianSet & wrench)
+void mtsForceDimensionDevice::servo_cf(const prmForceCartesianSet & wrench)
 {
     SetControlMode(mtsForceDimension::CARTESIAN_EFFORT);
-    mDesiredWrench = wrench;
+    m_servo_cf = wrench;
 }
 
-void mtsForceDimensionDevice::SetEffortGripper(const prmForceTorqueJointSet & effortGripper)
+void mtsForceDimensionDevice::gripper_servo_jf(const prmForceTorqueJointSet & effortGripper)
 {
     if (effortGripper.ForceTorque().size() != 1) {
-        mInterface->SendError(mName + ": effort vector size for SetEffortGripper must be 1 [id:" + mDeviceIdString + "]");
+        m_interface->SendError(m_name + ": effort vector size for gripper servo_jf must be 1 [id:" + m_device_id_string + "]");
         return;
     }
     SetControlMode(mtsForceDimension::CARTESIAN_EFFORT);
-    mDesiredEffortGripper = effortGripper.ForceTorque().at(0) * mGripperDirection;
+    m_gripper_servo_jf = effortGripper.ForceTorque().at(0) * m_gripper_direction;
 }
 
 void mtsForceDimensionDevice::SetPositionGoalCartesian(const prmPositionCartesianSet & position)
 {
     SetControlMode(mtsForceDimension::CARTESIAN_POSITION);
-    mDesiredPosition = position;
-    mNewPositionGoal = true;
+    m_servo_cp = position;
+    m_new_servo_cp = true;
 
-    mRotationOffset = mRawOrientation.Inverse() * position.Goal().Rotation();
+    m_rotation_offset = mRawOrientation.Inverse() * position.Goal().Rotation();
 }
 
 void mtsForceDimensionDevice::UnlockOrientation(void)
 {
-    // mRotationOffset = vctMatRot3();
+    // m_rotation_offset = vctMatRot3();
 }
 
 void mtsForceDimensionDevice::Freeze(void)
 {
     SetControlMode(mtsForceDimension::CARTESIAN_POSITION);
-    mDesiredPosition.Goal().Assign(mPositionCartesian.Position());
+    m_servo_cp.Goal().Assign(m_measured_cp.Position());
 }
 
 void mtsForceDimensionDevice::LockOrientation(const vctMatRot3 & orientation)
@@ -455,15 +447,15 @@ void mtsForceDimensionDevice::LockOrientation(const vctMatRot3 & orientation)
     // Ro: rotation offset to make the rotation looks like desired
     // Rc * Ro = Rd
     // Ro = Rc_transpose * Rd
-    mRotationOffset = mRawOrientation.Inverse() * orientation;
+    m_rotation_offset = mRawOrientation.Inverse() * orientation;
 }
 
 void mtsForceDimensionDevice::SetGravityCompensation(const bool & gravity)
 {
     if (gravity) {
-        dhdSetGravityCompensation(DHD_ON, mDeviceId);
+        dhdSetGravityCompensation(DHD_ON, m_device_id);
     } else {
-        dhdSetGravityCompensation(DHD_OFF, mDeviceId);
+        dhdSetGravityCompensation(DHD_OFF, m_device_id);
     }
 }
 

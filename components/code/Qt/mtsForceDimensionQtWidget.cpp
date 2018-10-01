@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2014-07-21
 
-  (C) Copyright 2014-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -42,13 +42,13 @@ mtsForceDimensionQtWidget::mtsForceDimensionQtWidget(const std::string & compone
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Device");
     if (interfaceRequired) {
         QMMessage->SetInterfaceRequired(interfaceRequired);
-        interfaceRequired->AddFunction("GetPositionCartesian", Device.GetPositionCartesian);
-        interfaceRequired->AddFunction("GetWrenchBody", Device.GetWrenchBody);
-        interfaceRequired->AddFunction("GetStateGripper", Device.GetStateGripper);
+        interfaceRequired->AddFunction("measured_cp", Device.measured_cp);
+        interfaceRequired->AddFunction("measured_cf", Device.measured_cf);
+        interfaceRequired->AddFunction("gripper_measured_js", Device.gripper_measured_js);
         interfaceRequired->AddFunction("GetPeriodStatistics", Device.GetPeriodStatistics);
         interfaceRequired->AddFunction("Freeze", Device.Freeze);
         interfaceRequired->AddFunction("SetGravityCompensation", Device.SetGravityCompensation);
-        interfaceRequired->AddFunction("SetWrenchBody", Device.SetWrenchBody);
+        interfaceRequired->AddFunction("servo_cf", Device.servo_cf);
     }
     setupUi();
     startTimer(TimerPeriodInMilliseconds); // ms
@@ -94,19 +94,20 @@ void mtsForceDimensionQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     }
 
     mtsExecutionResult executionResult;
-    executionResult = Device.GetPositionCartesian(PositionCartesian);
+    executionResult = Device.measured_cp(m_measured_cp);
     if (executionResult) {
-        QPCGWidget->SetValue(PositionCartesian);
+        QPCGWidget->SetValue(m_measured_cp);
     }
 
-    executionResult = Device.GetWrenchBody(Wrench);
+    executionResult = Device.measured_cf(m_measured_cf);
     if (executionResult) {
-        QFTWidget->SetValue(Wrench.F(), Wrench.T(), Wrench.Timestamp());
+        QFTWidget->SetValue(m_measured_cf.F(), m_measured_cf.T(),
+                            m_measured_cf.Timestamp());
     }
 
-    executionResult = Device.GetStateGripper(StateGripper);
+    executionResult = Device.gripper_measured_js(m_gripper_measured_js);
     if (executionResult) {
-        QLPositionGripper->setNum(StateGripper.Position().at(0) * cmn180_PI);
+        QLPositionGripper->setNum(m_gripper_measured_js.Position().at(0) * cmn180_PI);
     }
 
     Device.GetPeriodStatistics(IntervalStatistics);
@@ -180,5 +181,5 @@ void mtsForceDimensionQtWidget::SlotGravityCompensation(void)
 {
     Device.SetGravityCompensation(true);
     prmForceCartesianSet wrench;
-    Device.SetWrenchBody(wrench);
+    Device.servo_cf(wrench);
 }

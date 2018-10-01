@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-11-10
 
-  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -43,13 +43,13 @@ int main(int argc, char * argv[])
     // parse options
     cmnCommandLineOptions options;
     std::string jsonConfigFile = "";
-    double rosPeriod = 10.0 * cmn_ms;
+    double rosPeriod = 2.0 * cmn_ms;
 
     options.AddOptionOneValue("j", "json-config",
                               "json configuration file",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &jsonConfigFile);
     options.AddOptionOneValue("p", "ros-period",
-                              "period in seconds to read all tool positions (default 0.01, 10 ms, 100Hz).  There is no point to have a period higher than the tracker component",
+                              "period in seconds to read all tool positions (default 0.002, 2 ms, 500Hz).  There is no point to have a period higher than the device",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &rosPeriod);
 
     // check that all required options have been provided
@@ -71,9 +71,12 @@ int main(int argc, char * argv[])
     mtsManagerLocal * componentManager = mtsComponentManager::GetInstance();
     componentManager->AddComponent(forceDimension);
 
-    // ROS bridge
-    mtsROSBridge * rosBridge = new mtsROSBridge("ForceDimensionBridge", rosPeriod, true, false);
-    componentManager->AddComponent(rosBridge);
+    // ROS bridge for publishers
+    mtsROSBridge * pub_bridge = new mtsROSBridge("force_dimension_pub", rosPeriod, true);
+    // separate thread to spin, i.e. subscribe
+    mtsROSBridge * spin_bridge = new mtsROSBridge("force_dimension_spin", 0.1 * cmn_ms, true, false);
+    componentManager->AddComponent(pub_bridge);
+    componentManager->AddComponent(spin_bridge);
 
     // create a Qt user interface
     QApplication application(argc, argv);
@@ -98,33 +101,52 @@ int main(int argc, char * argv[])
          device != endDevices;
          ++device) {
         // Qt
-        deviceWidget = new mtsForceDimensionQtWidget(*device + "-gui");
+        std::string name = *device;
+        deviceWidget = new mtsForceDimensionQtWidget(name + "-gui");
         deviceWidget->Configure();
         componentManager->AddComponent(deviceWidget);
         componentManager->Connect(deviceWidget->GetName(), "Device",
-                                  forceDimension->GetName(), *device);
-        tabWidget->addTab(deviceWidget, (*device).c_str());
+                                  forceDimension->GetName(), name);
+        tabWidget->addTab(deviceWidget, name.c_str());
 
-        rosBridge->AddPublisherFromCommandRead<prmPositionCartesianGet, geometry_msgs::PoseStamped>
-            (*device, "GetPositionCartesian",
-             rosNamespace + *device + "/position_cartesian_current");
-        // ROS
-        rosBridge->AddPublisherFromCommandRead<prmVelocityCartesianGet, geometry_msgs::TwistStamped>
-            (*device, "GetVelocityCartesian",
-             rosNamespace + *device + "/twist_body_current");
-        rosBridge->AddPublisherFromCommandRead<prmForceCartesianGet, geometry_msgs::WrenchStamped>
-            (*device, "GetWrenchBody",
-             rosNamespace + *device + "/wrench_body_current");
-        rosBridge->AddPublisherFromCommandRead<prmStateJoint, sensor_msgs::JointState>
-            (*device, "GetStateGripper",
-             rosNamespace + *device + "/state_gripper_current");
+        std::string deviceNamespace = rosNamespace + name + '/';
+        // motion commands
+        pub_bridge->AddPublisherFromCommandRead<prmPositionCartesianGet, geometry_msgs::TransformStamped>
+            (name, "measured_cp",
+             deviceNamespace + "measured_cp");
+        pub_bridge->AddPublisherFromCommandRead<prmVelocityCartesianGet, geometry_msgs::TwistStamped>
+            (name, "measured_cv",
+             deviceNamespace + "measured_cv");
+        pub_bridge->AddPublisherFromCommandRead<prmForceCartesianGet, geometry_msgs::WrenchStamped>
+            (name, "measured_cf",
+             deviceNamespace + "measured_cf");
+        pub_bridge->AddPublisherFromCommandRead<prmStateJoint, sensor_msgs::JointState>
+            (name, "gripper_measured_js",
+             deviceNamespace + "gripper/measured_js");
+        spin_bridge->AddSubscriberToCommandWrite<prmForceCartesianSet, geometry_msgs::WrenchStamped>
+            (name, "servo_cf",
+             deviceNamespace + "servo_cf");
+
+        // device state
+        spin_bridge->AddSubscriberToCommandWrite<std::string, std_msgs::String>
+            (name, "set_device_state",
+             deviceNamespace + "set_device_state");
+        spin_bridge->AddPublisherFromEventWrite<std::string, std_msgs::String>
+            (name, "device_state",
+             deviceNamespace + "device_state");
+        spin_bridge->AddServiceFromCommandRead<std::string, std_srvs::Trigger>
+            (name, "device_state",
+             deviceNamespace + "device_state");
+
         // Connect
-        componentManager->Connect(rosBridge->GetName(), *device,
-                                  forceDimension->GetName(), *device);
+        componentManager->Connect(pub_bridge->GetName(), name,
+                                  forceDimension->GetName(), name);
+        componentManager->Connect(spin_bridge->GetName(), name,
+                                  forceDimension->GetName(), name);
 
         // Buttons
         NamesType buttons;
-        forceDimension->GetButtonNames(*device, buttons);
+        forceDimension->GetButtonNames(name, buttons);
         const NamesType::iterator endButtons = buttons.end();
         NamesType::iterator button;
         for (button = buttons.begin();
@@ -133,9 +155,9 @@ int main(int argc, char * argv[])
             // sawForceDimension button names are device-button, use device/button for ROS
             std::string rosButton = *button;
             std::replace(rosButton.begin(), rosButton.end(), '-', '/');
-            rosBridge->AddPublisherFromEventWrite<prmEventButton, sensor_msgs::Joy>
+            spin_bridge->AddPublisherFromEventWrite<prmEventButton, sensor_msgs::Joy>
                 (*button, "Button", "/force_dimension/" + rosButton);
-            componentManager->Connect(rosBridge->GetName(), *button,
+            componentManager->Connect(spin_bridge->GetName(), *button,
                                       forceDimension->GetName(), *button);
         }
     }

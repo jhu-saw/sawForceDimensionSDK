@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2014-07-21
 
-  (C) Copyright 2014-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -39,7 +39,7 @@ class CISST_EXPORT mtsForceDimensionQtWidget : public QWidget, public mtsCompone
     Q_OBJECT;
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
-public:
+ public:
     mtsForceDimensionQtWidget(const std::string & componentName, double periodInSeconds = 50.0 * cmn_ms);
     ~mtsForceDimensionQtWidget() {}
 
@@ -47,32 +47,32 @@ public:
     void Startup(void);
     void Cleanup(void);
 
-protected:
+ protected:
     virtual void closeEvent(QCloseEvent * event);
 
-private slots:
+ private slots:
     void timerEvent(QTimerEvent * event);
 
-private:
+ private:
     //! setup GUI
     void setupUi(void);
     int TimerPeriodInMilliseconds;
 
-protected:
+ protected:
     struct {
-        mtsFunctionRead GetPositionCartesian;
-        mtsFunctionRead GetWrenchBody;
-        mtsFunctionRead GetStateGripper;
+        mtsFunctionRead measured_cp;
+        mtsFunctionRead measured_cf;
+        mtsFunctionRead gripper_measured_js;
         mtsFunctionRead GetPeriodStatistics;
         mtsFunctionVoid Freeze;
         mtsFunctionWrite SetGravityCompensation;
-        mtsFunctionWrite SetWrenchBody;
+        mtsFunctionWrite servo_cf;
     } Device;
 
-private:
-    prmPositionCartesianGet PositionCartesian;
-    prmForceCartesianGet Wrench;
-    prmStateJoint StateGripper;
+ private:
+    prmPositionCartesianGet m_measured_cp;
+    prmForceCartesianGet m_measured_cf;
+    prmStateJoint m_gripper_measured_js;
 
     prmPositionCartesianGetQtWidget * QPCGWidget;
     vctForceTorqueQtWidget * QFTWidget;
