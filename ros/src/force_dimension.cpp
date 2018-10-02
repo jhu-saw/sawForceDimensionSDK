@@ -132,6 +132,12 @@ int main(int argc, char * argv[])
         spin_bridge->AddSubscriberToCommandWrite<prmForceCartesianSet, geometry_msgs::WrenchStamped>
             (name, "servo_cf",
              deviceNamespace + "servo_cf");
+        spin_bridge->AddSubscriberToCommandWrite<prmPositionCartesianSet, geometry_msgs::TransformStamped>
+            (name, "move_cp",
+             deviceNamespace + "move_cp");
+        spin_bridge->AddPublisherFromEventWrite<bool, std_msgs::Bool>
+            (name, "is_moving",
+             deviceNamespace + "is_moving");
 
         // device state
         spin_bridge->AddSubscriberToCommandWrite<std::string, std_msgs::String>

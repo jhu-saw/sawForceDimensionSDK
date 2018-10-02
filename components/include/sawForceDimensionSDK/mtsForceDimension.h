@@ -50,7 +50,7 @@ class CISST_EXPORT mtsForceDimension: public mtsTaskContinuous
     void Run(void);
     void Cleanup(void);
 
-    enum ControlModeType {UNDEFINED, CARTESIAN_POSITION, CARTESIAN_EFFORT};
+    enum ControlModeType {UNDEFINED, SERVO_CP, SERVO_CF, MOVE_CP};
 
  protected:
 
