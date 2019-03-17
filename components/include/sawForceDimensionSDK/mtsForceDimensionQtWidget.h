@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2014-07-21
 
-  (C) Copyright 2014-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -27,6 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianGetQtWidget.h>
 #include <cisstParameterTypes/prmForceCartesianGet.h>
 #include <cisstParameterTypes/prmStateJoint.h>
+#include <cisstParameterTypes/prmOperatingStateQtWidget.h>
 
 #include <QWidget>
 #include <QLabel>
@@ -50,8 +51,14 @@ class CISST_EXPORT mtsForceDimensionQtWidget : public QWidget, public mtsCompone
  protected:
     virtual void closeEvent(QCloseEvent * event);
 
+ signals:
+    void SignalOperatingState(const prmOperatingState & state);
+
  private slots:
     void timerEvent(QTimerEvent * event);
+    void SlotOperatingStateEventHandler(const prmOperatingState & state);
+    void SlotFreeze(void);
+    void SlotGravityCompensation(void);
 
  private:
     //! setup GUI
@@ -78,16 +85,16 @@ class CISST_EXPORT mtsForceDimensionQtWidget : public QWidget, public mtsCompone
     vctForceTorqueQtWidget * QFTWidget;
     QLabel * QLPositionGripper;
 
-    // Timing
+    // timing
     mtsIntervalStatistics IntervalStatistics;
     mtsIntervalStatisticsQtWidget * QMIntervalStatistics;
 
-    // Messages
+    // messages
     mtsMessageQtWidget * QMMessage;
 
- private slots:
-    void SlotFreeze(void);
-    void SlotGravityCompensation(void);
+    // operating state
+    prmOperatingStateQtWidget * QPOState;
+    void OperatingStateEventHandler(const prmOperatingState & state);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsForceDimensionQtWidget);

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-11-10
 
-  (C) Copyright 2016-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -135,20 +135,17 @@ int main(int argc, char * argv[])
         spin_bridge->AddSubscriberToCommandWrite<prmPositionCartesianSet, geometry_msgs::TransformStamped>
             (name, "move_cp",
              deviceNamespace + "move_cp");
-        spin_bridge->AddPublisherFromEventWrite<bool, std_msgs::Bool>
-            (name, "is_moving",
-             deviceNamespace + "is_moving");
 
         // device state
         spin_bridge->AddSubscriberToCommandWrite<std::string, std_msgs::String>
-            (name, "set_device_state",
-             deviceNamespace + "set_device_state");
-        spin_bridge->AddPublisherFromEventWrite<std::string, std_msgs::String>
-            (name, "device_state",
-             deviceNamespace + "device_state");
-        spin_bridge->AddServiceFromCommandRead<std::string, std_srvs::Trigger>
-            (name, "device_state",
-             deviceNamespace + "device_state");
+            (name, "state_command",
+             deviceNamespace + "state_command");
+        spin_bridge->AddPublisherFromEventWrite<prmOperatingState, crtk_msgs::robot_state>
+            (name, "operating_state",
+             deviceNamespace + "operating_state");
+        //        spin_bridge->AddServiceFromCommandRead<crtk_msgs::robot_state, std_srvs::Trigger>
+        //    (name, "operating_state",
+        //     deviceNamespace + "operating_state");
 
         // messages
         spin_bridge->AddLogFromEventWrite(name, "Error",

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-11-10
 
-  (C) Copyright 2016-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawForceDimensionSDK/mtsForceDimension.h>
 
+#include <cisstParameterTypes/prmOperatingState.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstParameterTypes/prmVelocityCartesianGet.h>
@@ -60,9 +61,9 @@ protected:
     void SetControlMode(const mtsForceDimension::ControlModeType & mode);
 
     // crtk state
-    void set_device_state(const std::string & state);
-    bool m_enabled; // somewhat redundant with m_device_state but faster to test in runtime
-    mtsStdString m_device_state;
+    void state_command(const std::string & command);
+    prmOperatingState m_operating_state;
+    mtsFunctionWrite m_operating_state_event;
 
     void servo_cp(const prmPositionCartesianSet & newPosition);
     void servo_cf(const prmForceCartesianSet & newForce);
@@ -72,9 +73,6 @@ protected:
     void LockOrientation(const vctMatRot3 & orientation);
     void UnlockOrientation(void);
     void Freeze(void);
-
-    mtsFunctionWrite m_state_event;
-    mtsFunctionWrite m_is_moving_event;
 
     int m_device_id;
     std::string m_device_id_string;
@@ -104,7 +102,6 @@ protected:
     mtsForceDimension::ControlModeType mControlMode;
 
     bool m_new_servo_cp;
-    bool m_is_moving;
     prmPositionCartesianSet m_servo_cp;
     prmForceCartesianSet m_servo_cf;
     double m_gripper_servo_jf;
@@ -118,14 +115,16 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
     m_device_id(deviceId),
     m_name(name),
     m_state_table(stateTable),
-    m_interface(interfaceProvided),
-    m_is_moving(false)
+    m_interface(interfaceProvided)
 {
     std::stringstream idString;
     idString << deviceId;
     m_device_id_string = idString.str();
 
-    m_device_state = "DISABLED";
+    m_operating_state.State() = prmOperatingState::VOID;
+    m_operating_state.IsBusy() = false;
+    m_operating_state.Valid() = true;
+
     m_new_servo_cp = false;
     mControlMode = mtsForceDimension::UNDEFINED;
 
@@ -139,7 +138,7 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
     m_setpoint_cp.SetMovingFrame(m_name);
 
     m_state_table->SetAutomaticAdvance(false);
-    m_state_table->AddData(m_device_state, "device_state");
+    m_state_table->AddData(m_operating_state, "operating_state");
     m_state_table->AddData(m_measured_cp, "measured_cp");
     m_state_table->AddData(m_measured_cv, "measured_cv");
     m_state_table->AddData(m_measured_cf, "measured_cf");
@@ -148,7 +147,6 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
     m_gripper_measured_js.Velocity().SetSize(1);
     m_gripper_measured_js.Effort().SetSize(1);
     m_state_table->AddData(m_gripper_measured_js, "gripper_measured_js");
-    m_state_table->AddData(m_is_moving, "is_moving");
 
     if (m_interface) {
         m_interface->AddMessageEvents();
@@ -171,8 +169,6 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
                                      this, "gripper_servo_jf");
         m_interface->AddCommandWrite(&mtsForceDimensionDevice::move_cp,
                                      this, "move_cp");
-        m_interface->AddEventWrite(m_is_moving_event, "is_moving",
-                                   false);
         m_interface->AddCommandWrite(&mtsForceDimensionDevice::SetGravityCompensation,
                                      this, "SetGravityCompensation");
         m_interface->AddCommandWrite(&mtsForceDimensionDevice::LockOrientation,
@@ -183,12 +179,12 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
                                     this, "Freeze");
 
         // robot State
-        m_interface->AddCommandWrite(&mtsForceDimensionDevice::set_device_state,
-                                     this, "set_device_state", std::string(""));
-        m_interface->AddCommandReadState(*m_state_table, m_device_state,
+        m_interface->AddCommandWrite(&mtsForceDimensionDevice::state_command,
+                                     this, "state_command", std::string(""));
+        m_interface->AddCommandReadState(*m_state_table, m_operating_state,
                                          "device_state");
-        m_interface->AddEventWrite(m_state_event, "device_state",
-                                   std::string());
+        m_interface->AddEventWrite(m_operating_state_event, "operating_state",
+                                   prmOperatingState());
         // stats
         m_interface->AddCommandReadState(*m_state_table, m_state_table->PeriodStats,
                                          "GetPeriodStatistics");
@@ -271,10 +267,10 @@ void mtsForceDimensionDevice::Run(void)
         break;
     case mtsForceDimension::MOVE_CP:
         // check if the arm is still moving
-        if (m_is_moving
+        if (m_operating_state.IsBusy()
             && (!drdIsMoving(m_device_id))) {
-            m_is_moving = false;
-            m_is_moving_event(false);
+            m_operating_state.IsBusy() = false;
+            m_operating_state_event(m_operating_state);
         }
         break;
     default:
@@ -371,22 +367,20 @@ void mtsForceDimensionDevice::GetRobotData(void)
     }
 }
 
-void mtsForceDimensionDevice::set_device_state(const std::string & state) {
-    if (state == "ENABLED") {
-        m_device_state = "ENABLED";
-        m_enabled = true;
-    } else if (state == "DISABLED") {
-        m_device_state = "DISABLED";
-        m_enabled = false;
+void mtsForceDimensionDevice::state_command(const std::string & command) {
+    if (command == "ENABLE") {
+        m_operating_state.State() = prmOperatingState::ENABLED;
+    } else if (command == "DISABLE") {
+        m_operating_state.State() = prmOperatingState::DISABLED;
     } else {
-        m_interface->SendStatus(this->m_name + ": requested state \""
-                                + state + "\" is not supported yet");
+        m_interface->SendStatus(this->m_name + ": state command \""
+                                + command + "\" is not supported yet");
     }
     // always emit event with current device state
     m_interface->SendStatus(this->m_name
                             + ": current state is \""
-                            + m_device_state.Data + "\"");
-    m_state_event(m_device_state);
+                            + prmOperatingState::EnumToString(m_operating_state.State()) + "\"");
+    m_operating_state_event(m_operating_state);
 }
 
 void mtsForceDimensionDevice::SetControlMode(const mtsForceDimension::ControlModeType & mode)
@@ -459,8 +453,8 @@ void mtsForceDimensionDevice::move_cp(const prmPositionCartesianSet & position)
                  false,
                  m_device_id);
     m_rotation_offset = mRawOrientation.Inverse() * position.Goal().Rotation();
-    m_is_moving = true;
-    m_is_moving_event(true);
+    m_operating_state.IsBusy() = true;
+    m_operating_state_event(m_operating_state);
 }
 
 void mtsForceDimensionDevice::UnlockOrientation(void)

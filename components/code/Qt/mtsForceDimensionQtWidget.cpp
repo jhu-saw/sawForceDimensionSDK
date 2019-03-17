@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2014-07-21
 
-  (C) Copyright 2014-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -38,17 +38,19 @@ mtsForceDimensionQtWidget::mtsForceDimensionQtWidget(const std::string & compone
 {
     QMMessage = new mtsMessageQtWidget();
 
-    // Setup CISST Interface
+    // setup CISST interface
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Device");
     if (interfaceRequired) {
         QMMessage->SetInterfaceRequired(interfaceRequired);
         interfaceRequired->AddFunction("measured_cp", Device.measured_cp);
         interfaceRequired->AddFunction("measured_cf", Device.measured_cf);
         interfaceRequired->AddFunction("gripper_measured_js", Device.gripper_measured_js);
+        interfaceRequired->AddFunction("servo_cf", Device.servo_cf);
+        interfaceRequired->AddEventHandlerWrite(&mtsForceDimensionQtWidget::OperatingStateEventHandler,
+                                                this, "operating_state");
         interfaceRequired->AddFunction("GetPeriodStatistics", Device.GetPeriodStatistics);
         interfaceRequired->AddFunction("Freeze", Device.Freeze);
         interfaceRequired->AddFunction("SetGravityCompensation", Device.SetGravityCompensation);
-        interfaceRequired->AddFunction("servo_cf", Device.servo_cf);
     }
     setupUi();
     startTimer(TimerPeriodInMilliseconds); // ms
@@ -86,6 +88,70 @@ void mtsForceDimensionQtWidget::closeEvent(QCloseEvent * event)
     }
 }
 
+void mtsForceDimensionQtWidget::setupUi(void)
+{
+    QHBoxLayout * mainLayout = new QHBoxLayout;
+
+    // side by side for 3D position, gripper...
+    QVBoxLayout * controlLayout = new QVBoxLayout;
+    mainLayout->addLayout(controlLayout);
+
+    // 3D position
+    QPCGWidget = new prmPositionCartesianGetQtWidget();
+    controlLayout->addWidget(QPCGWidget);
+
+    // wrench
+    QFTWidget = new vctForceTorqueQtWidget();
+    controlLayout->addWidget(QFTWidget);
+
+    // vectors of values
+    QGridLayout * gridLayout = new QGridLayout;
+    controlLayout->addLayout(gridLayout);
+
+    gridLayout->setSpacing(1);
+    int row = 0;
+    gridLayout->addWidget(new QLabel("Gripper"), row, 0);
+    QLPositionGripper = new QLabel();
+    gridLayout->addWidget(QLPositionGripper, row, 1);
+    row++;
+
+    QPushButton * freezeButton = new QPushButton("Freeze");
+    controlLayout->addWidget(freezeButton);
+    connect(freezeButton, SIGNAL(clicked()),
+            this, SLOT(SlotFreeze()));
+
+    QPushButton * gravityCompensationButton = new QPushButton("Gravity compensation");
+    controlLayout->addWidget(gravityCompensationButton);
+    connect(gravityCompensationButton, SIGNAL(clicked()),
+            this, SLOT(SlotGravityCompensation()));
+
+    controlLayout->addStretch();
+
+    // system
+    QVBoxLayout * systemLayout = new QVBoxLayout();
+    mainLayout->addLayout(systemLayout);
+
+    // timing
+    QMIntervalStatistics = new mtsIntervalStatisticsQtWidget();
+    systemLayout->addWidget(QMIntervalStatistics);
+
+    // messages
+    QMMessage->setupUi();
+    systemLayout->addWidget(QMMessage);
+
+    // operating state
+    QPOState = new prmOperatingStateQtWidget();
+    systemLayout->addWidget(QPOState);
+    connect(this, SIGNAL(SignalOperatingState(prmOperatingState)),
+            this, SLOT(SlotOperatingStateEventHandler(prmOperatingState)));
+
+    systemLayout->addStretch();
+
+    setLayout(mainLayout);
+    setWindowTitle("sawForceDimensionSDK");
+    resize(sizeHint());
+}
+
 void mtsForceDimensionQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
 {
     // make sure we should update the display
@@ -114,62 +180,9 @@ void mtsForceDimensionQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     QMIntervalStatistics->SetValue(IntervalStatistics);
 }
 
-void mtsForceDimensionQtWidget::setupUi(void)
+void mtsForceDimensionQtWidget::SlotOperatingStateEventHandler(const prmOperatingState & state)
 {
-    QHBoxLayout * mainLayout = new QHBoxLayout;
-
-    // Side by side for 3D position, gripper...
-    QVBoxLayout * controlLayout = new QVBoxLayout;
-    mainLayout->addLayout(controlLayout);
-
-    // 3D position
-    QPCGWidget = new prmPositionCartesianGetQtWidget();
-    controlLayout->addWidget(QPCGWidget);
-
-    // Wrench
-    QFTWidget = new vctForceTorqueQtWidget();
-    controlLayout->addWidget(QFTWidget);
-
-    // Vectors of values
-    QGridLayout * gridLayout = new QGridLayout;
-    controlLayout->addLayout(gridLayout);
-
-    gridLayout->setSpacing(1);
-    int row = 0;
-    gridLayout->addWidget(new QLabel("Gripper"), row, 0);
-    QLPositionGripper = new QLabel();
-    gridLayout->addWidget(QLPositionGripper, row, 1);
-    row++;
-
-    QPushButton * freezeButton = new QPushButton("Freeze");
-    controlLayout->addWidget(freezeButton);
-    connect(freezeButton, SIGNAL(clicked()),
-            this, SLOT(SlotFreeze()));
-
-    QPushButton * gravityCompensationButton = new QPushButton("Gravity compensation");
-    controlLayout->addWidget(gravityCompensationButton);
-    connect(gravityCompensationButton, SIGNAL(clicked()),
-            this, SLOT(SlotGravityCompensation()));
-
-    controlLayout->addStretch();
-
-    // System
-    QVBoxLayout * systemLayout = new QVBoxLayout();
-    mainLayout->addLayout(systemLayout);
-
-    // Timing
-    QMIntervalStatistics = new mtsIntervalStatisticsQtWidget();
-    systemLayout->addWidget(QMIntervalStatistics);
-
-    // Messages
-    QMMessage->setupUi();
-    systemLayout->addWidget(QMMessage);
-
-    systemLayout->addStretch();
-
-    setLayout(mainLayout);
-    setWindowTitle("sawForceDimensionSDK");
-    resize(sizeHint());
+    QPOState->SetValue(state);
 }
 
 void mtsForceDimensionQtWidget::SlotFreeze(void)
@@ -182,4 +195,9 @@ void mtsForceDimensionQtWidget::SlotGravityCompensation(void)
     Device.SetGravityCompensation(true);
     prmForceCartesianSet wrench;
     Device.servo_cf(wrench);
+}
+
+void mtsForceDimensionQtWidget::OperatingStateEventHandler(const prmOperatingState & state)
+{
+    emit SignalOperatingState(state);
 }
