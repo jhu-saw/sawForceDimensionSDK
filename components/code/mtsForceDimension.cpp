@@ -121,7 +121,6 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
     idString << deviceId;
     m_device_id_string = idString.str();
 
-    m_operating_state.State() = prmOperatingState::VOID;
     m_operating_state.IsBusy() = false;
     m_operating_state.Valid() = true;
 
