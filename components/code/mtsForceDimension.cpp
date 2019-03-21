@@ -181,7 +181,7 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
         m_interface->AddCommandWrite(&mtsForceDimensionDevice::state_command,
                                      this, "state_command", std::string(""));
         m_interface->AddCommandReadState(*m_state_table, m_operating_state,
-                                         "device_state");
+                                         "operating_state");
         m_interface->AddEventWrite(m_operating_state_event, "operating_state",
                                    prmOperatingState());
         // stats
