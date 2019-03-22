@@ -140,12 +140,12 @@ int main(int argc, char * argv[])
         spin_bridge->AddSubscriberToCommandWrite<std::string, std_msgs::String>
             (name, "state_command",
              deviceNamespace + "state_command");
-        spin_bridge->AddPublisherFromEventWrite<prmOperatingState, crtk_msgs::robot_state>
+        spin_bridge->AddPublisherFromEventWrite<prmOperatingState, crtk_msgs::operating_state>
             (name, "operating_state",
              deviceNamespace + "operating_state");
-        //        spin_bridge->AddServiceFromCommandRead<crtk_msgs::robot_state, std_srvs::Trigger>
-        //    (name, "operating_state",
-        //     deviceNamespace + "operating_state");
+        spin_bridge->AddServiceFromCommandRead<prmOperatingState, crtk_msgs::trigger_operating_state>
+            (name, "operating_state",
+             deviceNamespace + "operating_state");
 
         // messages
         spin_bridge->AddLogFromEventWrite(name, "Error",
