@@ -254,6 +254,7 @@ void mtsForceDimensionDevice::Run(void)
                                             m_gripper_direction * m_gripper_servo_jf,
                                             m_device_id);
         m_setpoint_cp.Position().Assign(m_measured_cp.Position());
+        m_setpoint_cp.Valid() = m_measured_cp.Valid();
         break;
     case mtsForceDimension::SERVO_CP:
         if (m_new_servo_cp) {
@@ -262,6 +263,8 @@ void mtsForceDimensionDevice::Run(void)
                         m_servo_cp.Goal().Translation().Z(),
                         m_device_id);
             m_new_servo_cp = false;
+            m_setpoint_cp.Position().Assign(m_servo_cp.Goal());
+            m_setpoint_cp.Valid() = true;
         }
         break;
     case mtsForceDimension::MOVE_CP:
@@ -270,7 +273,16 @@ void mtsForceDimensionDevice::Run(void)
             && (!drdIsMoving(m_device_id))) {
             m_operating_state.IsBusy() = false;
             m_operating_state_event(m_operating_state);
-        }
+            // save last setpoint using goal for move
+            m_setpoint_cp.Position().Assign(m_servo_cp.Goal());
+            m_setpoint_cp.Valid() = true;
+        } else {
+            // still moving, we update the setpoint from measured,
+            // maybe there's a method in SDK to retrieve last setpoint
+            // but I couldn't find it
+            m_setpoint_cp.Position().Assign(m_measured_cp.Position());
+            m_setpoint_cp.Valid() = m_measured_cp.Valid();
+        }   
         break;
     default:
         break;
