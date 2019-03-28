@@ -212,7 +212,14 @@ void mtsForceDimensionDevice::Startup(void)
                                    + dhdErrorGetLastStr() + " [id:" + m_device_id_string + "]");
         } else {
             m_interface->SendStatus(m_name + ": properly initialized");
+            m_operating_state.IsHomed() = true;
+            m_operating_state.State() = prmOperatingState::ENABLED;
+            m_operating_state_event(m_operating_state);
         }
+    } else {
+        m_operating_state.IsHomed() = true;
+        m_operating_state.State() = prmOperatingState::ENABLED;
+        m_operating_state_event(m_operating_state);
     }
 
     // set gripper direction
@@ -282,7 +289,7 @@ void mtsForceDimensionDevice::Run(void)
             // but I couldn't find it
             m_setpoint_cp.Position().Assign(m_measured_cp.Position());
             m_setpoint_cp.Valid() = m_measured_cp.Valid();
-        }   
+        }
         break;
     default:
         break;
