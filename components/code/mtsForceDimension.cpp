@@ -356,6 +356,7 @@ void mtsForceDimensionDevice::GetRobotData(void)
     dhdGetGripperAngleRad(&m_gripper_measured_js.Position().at(0), m_device_id);
     m_gripper_measured_js.Position().at(0) *= m_gripper_direction;
     dhdGetGripperAngularVelocityRad(&m_gripper_measured_js.Velocity().at(0), m_device_id);
+    m_gripper_measured_js.SetValid(true);
 
     // buttons
     uint currentButtonMask = dhdGetButtonMask(m_device_id);
