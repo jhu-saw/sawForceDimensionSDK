@@ -111,6 +111,7 @@ protected:
     prmPositionCartesianSet mDesiredPosition;
     prmForceCartesianSet mDesiredWrench;
     double mDesiredEffortGripper;
+    double mDesiredGripper;
 };
 
 mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
@@ -261,6 +262,7 @@ void mtsForceDimensionDevice::Run(void)
                          mDesiredPosition.Goal().Translation().Z(),
                          false,
                          mDeviceId);
+            drdMoveToGrip(mDesiredGripper, false, mDeviceId);
             mNewPositionGoal = false;
         }
         break;
@@ -328,6 +330,7 @@ void mtsForceDimensionDevice::GetRobotData(void)
     // gripper
     dhdGetGripperAngleRad(&mStateGripper.Position().at(0), mDeviceId);
     mStateGripper.Position().at(0) *= mGripperDirection;
+
     dhdGetGripperAngularVelocityRad(&mStateGripper.Velocity().at(0),mDeviceId);
 
     // buttons
@@ -389,7 +392,8 @@ void mtsForceDimensionDevice::SetControlMode(const mtsForceDimension::ControlMod
         mNewPositionGoal = false;
         drdRegulatePos(true, mDeviceId);
         drdRegulateRot(false, mDeviceId);
-        drdRegulateGrip(false, mDeviceId);
+        drdRegulateGrip(true, mDeviceId);
+
         if (drdStart(mDeviceId) < 0) {
             mInterface->SendError(mName + ": failed to start control look, "
                                   + dhdErrorGetLastStr() + " [id:" + mDeviceIdString + "]");
@@ -446,6 +450,8 @@ void mtsForceDimensionDevice::Freeze(void)
 {
     SetControlMode(mtsForceDimension::CARTESIAN_POSITION);
     mDesiredPosition.Goal().Assign(mPositionCartesian.Position());
+
+    dhdGetGripperGap(&mDesiredGripper, mDeviceId);
 }
 
 void mtsForceDimensionDevice::LockOrientation(const vctMatRot3 & orientation)
