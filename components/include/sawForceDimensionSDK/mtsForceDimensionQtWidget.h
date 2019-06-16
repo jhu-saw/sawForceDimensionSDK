@@ -51,12 +51,8 @@ class CISST_EXPORT mtsForceDimensionQtWidget : public QWidget, public mtsCompone
  protected:
     virtual void closeEvent(QCloseEvent * event);
 
- signals:
-    void SignalOperatingState(const prmOperatingState & state);
-
  private slots:
     void timerEvent(QTimerEvent * event);
-    void SlotOperatingStateEventHandler(const prmOperatingState & state);
     void SlotFreeze(void);
     void SlotGravityCompensation(void);
 
@@ -94,7 +90,6 @@ class CISST_EXPORT mtsForceDimensionQtWidget : public QWidget, public mtsCompone
 
     // operating state
     prmOperatingStateQtWidget * QPOState;
-    void OperatingStateEventHandler(const prmOperatingState & state);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsForceDimensionQtWidget);

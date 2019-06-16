@@ -137,7 +137,7 @@ int main(int argc, char * argv[])
              deviceNamespace + "move_cp");
 
         // device state
-        spin_bridge->AddSubscriberToCommandWrite<std::string, std_msgs::String>
+        spin_bridge->AddSubscriberToCommandWrite<std::string, crtk_msgs::StringStamped>
             (name, "state_command",
              deviceNamespace + "state_command");
         spin_bridge->AddPublisherFromEventWrite<prmOperatingState, crtk_msgs::operating_state>

@@ -37,17 +37,17 @@ mtsForceDimensionQtWidget::mtsForceDimensionQtWidget(const std::string & compone
     TimerPeriodInMilliseconds(periodInSeconds)
 {
     QMMessage = new mtsMessageQtWidget();
+    QPOState = new prmOperatingStateQtWidget();
 
     // setup CISST interface
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Device");
     if (interfaceRequired) {
         QMMessage->SetInterfaceRequired(interfaceRequired);
+        QPOState->SetInterfaceRequired(interfaceRequired);
         interfaceRequired->AddFunction("measured_cp", Device.measured_cp);
         interfaceRequired->AddFunction("measured_cf", Device.measured_cf);
         interfaceRequired->AddFunction("gripper_measured_js", Device.gripper_measured_js);
         interfaceRequired->AddFunction("servo_cf", Device.servo_cf);
-        interfaceRequired->AddEventHandlerWrite(&mtsForceDimensionQtWidget::OperatingStateEventHandler,
-                                                this, "operating_state");
         interfaceRequired->AddFunction("GetPeriodStatistics", Device.GetPeriodStatistics);
         interfaceRequired->AddFunction("Freeze", Device.Freeze);
         interfaceRequired->AddFunction("SetGravityCompensation", Device.SetGravityCompensation);
@@ -140,10 +140,8 @@ void mtsForceDimensionQtWidget::setupUi(void)
     systemLayout->addWidget(QMMessage);
 
     // operating state
-    QPOState = new prmOperatingStateQtWidget();
+    QPOState->setupUi();
     systemLayout->addWidget(QPOState);
-    connect(this, SIGNAL(SignalOperatingState(prmOperatingState)),
-            this, SLOT(SlotOperatingStateEventHandler(prmOperatingState)));
 
     systemLayout->addStretch();
 
@@ -180,11 +178,6 @@ void mtsForceDimensionQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     QMIntervalStatistics->SetValue(IntervalStatistics);
 }
 
-void mtsForceDimensionQtWidget::SlotOperatingStateEventHandler(const prmOperatingState & state)
-{
-    QPOState->SetValue(state);
-}
-
 void mtsForceDimensionQtWidget::SlotFreeze(void)
 {
     Device.Freeze();
@@ -195,9 +188,4 @@ void mtsForceDimensionQtWidget::SlotGravityCompensation(void)
     Device.SetGravityCompensation(true);
     prmForceCartesianSet wrench;
     Device.servo_cf(wrench);
-}
-
-void mtsForceDimensionQtWidget::OperatingStateEventHandler(const prmOperatingState & state)
-{
-    emit SignalOperatingState(state);
 }
