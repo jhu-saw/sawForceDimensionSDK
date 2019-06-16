@@ -390,24 +390,28 @@ void mtsForceDimensionDevice::state_command(const std::string & command)
 {
     std::string humanReadableMessage;
     prmOperatingState::StateType newOperatingState;
-    if (m_operating_state.ValidCommand(prmOperatingState::CommandTypeFromString(command),
-                                       newOperatingState, humanReadableMessage)) {
-        if (command == "enable") {
-            m_operating_state.State() = prmOperatingState::ENABLED;
-        } else if (command == "disable") {
-            m_operating_state.State() = prmOperatingState::DISABLED;
+    try {
+        if (m_operating_state.ValidCommand(prmOperatingState::CommandTypeFromString(command),
+                                           newOperatingState, humanReadableMessage)) {
+            if (command == "enable") {
+                m_operating_state.State() = prmOperatingState::ENABLED;
+            } else if (command == "disable") {
+                m_operating_state.State() = prmOperatingState::DISABLED;
+            } else {
+                m_interface->SendStatus(this->m_name + ": state command \""
+                                        + command + "\" is not supported yet");
+            }
+            // always emit event with current device state
+            m_interface->SendStatus(this->m_name
+                                    + ": current state is \""
+                                    + prmOperatingState::StateTypeToString(m_operating_state.State()) + "\"");
+            m_operating_state.Valid() = true;
+            m_operating_state_event(m_operating_state);
         } else {
-            m_interface->SendStatus(this->m_name + ": state command \""
-                                    + command + "\" is not supported yet");
+            m_interface->SendWarning(this->m_name + ": " + humanReadableMessage);
         }
-        // always emit event with current device state
-        m_interface->SendStatus(this->m_name
-                                + ": current state is \""
-                                + prmOperatingState::StateTypeToString(m_operating_state.State()) + "\"");
-        m_operating_state.Valid() = true;
-        m_operating_state_event(m_operating_state);
-    } else {
-        m_interface->SendWarning(this->m_name + ": " + humanReadableMessage);
+    } catch (std::runtime_error & e) {
+        m_interface->SendWarning(this->m_name + ": " + command + " doesn't seem to be a valid state_command (" + e.what() + ")");
     }
 }
 
