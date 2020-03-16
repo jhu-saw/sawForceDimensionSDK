@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-11-10
 
-  (C) Copyright 2016-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -40,10 +40,16 @@ int main(int argc, char * argv[])
     cmnLogger::SetMaskClassMatching("mtsForceDimensionSDK", CMN_LOG_ALLOW_ALL);
     cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
 
+    // create ROS node handle
+    ros::init(argc, argv, "dvrk", ros::init_options::AnonymousName);
+    ros::NodeHandle rosNodeHandle;
+
     // parse options
     cmnCommandLineOptions options;
     std::string jsonConfigFile = "";
     double rosPeriod = 2.0 * cmn_ms;
+    typedef std::list<std::string> managerConfigType;
+    managerConfigType managerConfig;
 
     options.AddOptionOneValue("j", "json-config",
                               "json configuration file",
@@ -51,6 +57,11 @@ int main(int argc, char * argv[])
     options.AddOptionOneValue("p", "ros-period",
                               "period in seconds to read all tool positions (default 0.002, 2 ms, 500Hz).  There is no point to have a period higher than the device",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &rosPeriod);
+    options.AddOptionMultipleValues("m", "component-manager",
+                                    "JSON files to configure component manager",
+                                    cmnCommandLineOptions::OPTIONAL_OPTION, &managerConfig);
+    options.AddOptionNoValue("D", "dark-mode",
+                             "replaces the default Qt palette with darker colors");
 
     // check that all required options have been provided
     std::string errorMessage;
@@ -72,24 +83,25 @@ int main(int argc, char * argv[])
     componentManager->AddComponent(forceDimension);
 
     // ROS bridge for publishers
-    mtsROSBridge * pub_bridge = new mtsROSBridge("force_dimension_pub", rosPeriod, true);
+    mtsROSBridge * pub_bridge = new mtsROSBridge("force_dimension_pub", rosPeriod, &rosNodeHandle);
     // separate thread to spin, i.e. subscribe
-    mtsROSBridge * spin_bridge = new mtsROSBridge("force_dimension_spin", 0.1 * cmn_ms, true, false);
+    mtsROSBridge * spin_bridge = new mtsROSBridge("force_dimension_spin", 0.1 * cmn_ms, &rosNodeHandle);
+    spin_bridge->PerformsSpin(true);
     componentManager->AddComponent(pub_bridge);
     componentManager->AddComponent(spin_bridge);
 
     // create a Qt user interface
     QApplication application(argc, argv);
     cmnQt::QApplicationExitsOnCtrlC();
+    if (options.IsSet("dark-mode")) {
+        cmnQt::SetDarkMode();
+    }
 
     // organize all widgets in a tab widget
     QTabWidget * tabWidget = new QTabWidget;
 
     // device
     mtsForceDimensionQtWidget * deviceWidget;
-
-    // namespace
-    std::string rosNamespace = "/force_dimension/";
 
     // configure all components
     typedef std::list<std::string> NamesType;
@@ -109,7 +121,7 @@ int main(int argc, char * argv[])
                                   forceDimension->GetName(), name);
         tabWidget->addTab(deviceWidget, name.c_str());
 
-        std::string deviceNamespace = rosNamespace + name + '/';
+        std::string deviceNamespace = name + '/';
         // motion commands
         pub_bridge->AddPublisherFromCommandRead<prmPositionCartesianGet, geometry_msgs::TransformStamped>
             (name, "measured_cp",
@@ -172,10 +184,30 @@ int main(int argc, char * argv[])
             // sawForceDimension button names are device-button, use device/button for ROS
             std::string rosButton = *button;
             std::replace(rosButton.begin(), rosButton.end(), '-', '/');
+            std::replace(rosButton.begin(), rosButton.end(), '.', '_');
             spin_bridge->AddPublisherFromEventWrite<prmEventButton, sensor_msgs::Joy>
-                (*button, "Button", "/force_dimension/" + rosButton);
+                (*button, "Button", rosButton);
             componentManager->Connect(spin_bridge->GetName(), *button,
                                       forceDimension->GetName(), *button);
+        }
+    }
+
+    // custom user component
+    const managerConfigType::iterator endConfig = managerConfig.end();
+    for (managerConfigType::iterator iterConfig = managerConfig.begin();
+         iterConfig != endConfig;
+         ++iterConfig) {
+        if (!iterConfig->empty()) {
+            if (!cmnPath::Exists(*iterConfig)) {
+                CMN_LOG_INIT_ERROR << "File " << *iterConfig
+                                   << " not found!" << std::endl;
+            } else {
+                if (!componentManager->ConfigureJSON(*iterConfig)) {
+                    CMN_LOG_INIT_ERROR << "Configure: failed to configure component-manager for "
+                                       << *iterConfig << std::endl;
+                    return -1;
+                }
+            }
         }
     }
 
@@ -192,6 +224,9 @@ int main(int argc, char * argv[])
     componentManager->Cleanup();
 
     cmnLogger::Kill();
+
+    // stop ROS node
+    ros::shutdown();
 
     return 0;
 }

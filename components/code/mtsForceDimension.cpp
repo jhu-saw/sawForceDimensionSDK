@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-11-10
 
-  (C) Copyright 2016-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -105,13 +105,15 @@ protected:
     prmPositionCartesianSet m_servo_cp;
     prmForceCartesianSet m_servo_cf;
     double m_gripper_servo_jf;
+    double m_gripper_servo_jp;
 };
+
 
 mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
                                                  const std::string & name,
                                                  mtsStateTable * stateTable,
                                                  mtsInterfaceProvided * interfaceProvided,
-                                                 const ButtonInterfaces & buttonInterfaces):
+                                                 const mtsForceDimensionDevice::ButtonInterfaces & buttonInterfaces):
     m_device_id(deviceId),
     m_name(name),
     m_state_table(stateTable),
@@ -375,6 +377,7 @@ void mtsForceDimensionDevice::GetRobotData(void)
                 (*button)->Pressed = current;
                 // generate event
                 prmEventButton event;
+                event.SetValid(true);
                 if (current) {
                     event.SetType(prmEventButton::PRESSED);
                 } else {
@@ -489,6 +492,12 @@ void mtsForceDimensionDevice::move_cp(const prmPositionCartesianSet & position)
     m_operating_state_event(m_operating_state);
 }
 
+/* 
+void mtsForceDimensionDevice::gripper_move_jp(const prmPositionCartesianSet & position)
+{
+drdMoveToGrip(m_gripper_servo_jp, false, m_device_id);
+*/
+
 void mtsForceDimensionDevice::UnlockOrientation(void)
 {
     // m_rotation_offset = vctMatRot3();
@@ -498,6 +507,7 @@ void mtsForceDimensionDevice::Freeze(void)
 {
     SetControlMode(mtsForceDimension::SERVO_CP);
     m_servo_cp.Goal().Assign(m_measured_cp.Position());
+    dhdGetGripperGap(&m_gripper_servo_jp, m_device_id);
 }
 
 void mtsForceDimensionDevice::LockOrientation(const vctMatRot3 & orientation)
