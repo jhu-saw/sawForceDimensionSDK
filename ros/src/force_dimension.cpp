@@ -48,8 +48,7 @@ int main(int argc, char * argv[])
     cmnCommandLineOptions options;
     std::string jsonConfigFile = "";
     double rosPeriod = 2.0 * cmn_ms;
-    typedef std::list<std::string> managerConfigType;
-    managerConfigType managerConfig;
+    std::list<std::string> managerConfig;
 
     options.AddOptionOneValue("j", "json-config",
                               "json configuration file",
@@ -84,7 +83,7 @@ int main(int argc, char * argv[])
 
     // ROS bridge for publishers
     mtsROSBridge * pub_bridge = new mtsROSBridge("force_dimension_pub", rosPeriod, &rosNodeHandle);
-    // separate thread to spin, i.e. subscribe
+    // separate thread to spin, i.e. subscribe and events
     mtsROSBridge * spin_bridge = new mtsROSBridge("force_dimension_spin", 0.1 * cmn_ms, &rosNodeHandle);
     spin_bridge->PerformsSpin(true);
     componentManager->AddComponent(pub_bridge);
@@ -121,7 +120,12 @@ int main(int argc, char * argv[])
                                   forceDimension->GetName(), name);
         tabWidget->addTab(deviceWidget, name.c_str());
 
+        // ROS namespace
         std::string deviceNamespace = name + '/';
+        std::replace(deviceNamespace.begin(), deviceNamespace.end(), ' ', '_');
+        std::replace(deviceNamespace.begin(), deviceNamespace.end(), '-', '_');
+        std::replace(deviceNamespace.begin(), deviceNamespace.end(), '.', '_');
+
         // motion commands
         pub_bridge->AddPublisherFromCommandRead<prmPositionCartesianGet, geometry_msgs::TransformStamped>
             (name, "measured_cp",
@@ -192,23 +196,10 @@ int main(int argc, char * argv[])
         }
     }
 
-    // custom user component
-    const managerConfigType::iterator endConfig = managerConfig.end();
-    for (managerConfigType::iterator iterConfig = managerConfig.begin();
-         iterConfig != endConfig;
-         ++iterConfig) {
-        if (!iterConfig->empty()) {
-            if (!cmnPath::Exists(*iterConfig)) {
-                CMN_LOG_INIT_ERROR << "File " << *iterConfig
-                                   << " not found!" << std::endl;
-            } else {
-                if (!componentManager->ConfigureJSON(*iterConfig)) {
-                    CMN_LOG_INIT_ERROR << "Configure: failed to configure component-manager for "
-                                       << *iterConfig << std::endl;
-                    return -1;
-                }
-            }
-        }
+    // custom user components
+    if (!componentManager->ConfigureJSON(managerConfig)) {
+        CMN_LOG_INIT_ERROR << "Configure: failed to configure component-manager, check cisstLog for error messages" << std::endl;
+        return -1;
     }
 
     // create and start all components
