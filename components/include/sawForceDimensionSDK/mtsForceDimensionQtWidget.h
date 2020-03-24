@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2014-07-21
 
-  (C) Copyright 2014-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -19,18 +19,19 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsForceDimensionQtWidget_h
 #define _mtsForceDimensionQtWidget_h
 
-#include <cisstVector/vctForceTorqueQtWidget.h>
+#include <cisstCommon/cmnUnits.h>
+#include <cisstVector/vctForwardDeclarationsQt.h>
+
+#include <cisstMultiTask/mtsForwardDeclarationsQt.h>
 #include <cisstMultiTask/mtsComponent.h>
-#include <cisstMultiTask/mtsIntervalStatisticsQtWidget.h>
-#include <cisstMultiTask/mtsMessageQtWidget.h>
+#include <cisstMultiTask/mtsIntervalStatistics.h>
+
+#include <cisstParameterTypes/prmForwardDeclarationsQt.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
-#include <cisstParameterTypes/prmPositionCartesianGetQtWidget.h>
 #include <cisstParameterTypes/prmForceCartesianGet.h>
 #include <cisstParameterTypes/prmStateJoint.h>
-#include <cisstParameterTypes/prmOperatingStateQtWidget.h>
 
 #include <QWidget>
-#include <QLabel>
 
 // Always include last
 #include <sawForceDimensionSDK/sawForceDimensionSDKQtExport.h>
@@ -62,14 +63,18 @@ class CISST_EXPORT mtsForceDimensionQtWidget : public QWidget, public mtsCompone
     int TimerPeriodInMilliseconds;
 
  protected:
+
+    mtsInterfaceRequired * m_device_interface;
+
     struct {
         mtsFunctionRead measured_cp;
         mtsFunctionRead measured_cf;
         mtsFunctionRead gripper_measured_js;
-        mtsFunctionRead GetPeriodStatistics;
+        mtsFunctionWrite servo_cf;
         mtsFunctionVoid Freeze;
         mtsFunctionWrite SetGravityCompensation;
-        mtsFunctionWrite servo_cf;
+        mtsFunctionRead GetPeriodStatistics;
+        mtsFunctionRead get_button_names;
     } Device;
 
  private:
@@ -79,7 +84,7 @@ class CISST_EXPORT mtsForceDimensionQtWidget : public QWidget, public mtsCompone
 
     prmPositionCartesianGetQtWidget * QPCGWidget;
     vctForceTorqueQtWidget * QFTWidget;
-    QLabel * QLPositionGripper;
+    prmStateJointQtWidget * QSJWidget;
 
     // timing
     mtsIntervalStatistics IntervalStatistics;
@@ -90,6 +95,9 @@ class CISST_EXPORT mtsForceDimensionQtWidget : public QWidget, public mtsCompone
 
     // operating state
     prmOperatingStateQtWidget * QPOState;
+
+    // buttons
+    prmEventButtonQtWidgetComponent * QPBWidgetComponent;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsForceDimensionQtWidget);

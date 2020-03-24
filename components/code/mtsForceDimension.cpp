@@ -150,7 +150,9 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
     m_state_table->AddData(m_gripper_measured_js, "gripper_measured_js");
 
     if (m_interface) {
+        // system messages
         m_interface->AddMessageEvents();
+        // state
         m_interface->AddCommandReadState(*m_state_table, m_measured_cp,
                                          "measured_cp");
         m_interface->AddCommandReadState(*m_state_table, m_measured_cv,
@@ -161,7 +163,7 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
                                          "gripper_measured_js");
         m_interface->AddCommandReadState(*m_state_table, m_setpoint_cp,
                                          "setpoint_cp");
-
+        // commands
         m_interface->AddCommandWrite(&mtsForceDimensionDevice::servo_cp,
                                      this, "servo_cp");
         m_interface->AddCommandWrite(&mtsForceDimensionDevice::servo_cf,
@@ -178,7 +180,9 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
                                     this, "UnlockOrientation");
         m_interface->AddCommandVoid(&mtsForceDimensionDevice::Freeze,
                                     this, "Freeze");
-
+        // configuration
+        m_interface->AddCommandRead(&mtsForceDimensionDevice::GetButtonNames,
+                                    this, "get_button_names");
         // robot State
         m_interface->AddCommandWrite(&mtsForceDimensionDevice::state_command,
                                      this, "state_command", std::string(""));
@@ -492,7 +496,7 @@ void mtsForceDimensionDevice::move_cp(const prmPositionCartesianSet & position)
     m_operating_state_event(m_operating_state);
 }
 
-/* 
+/*
 void mtsForceDimensionDevice::gripper_move_jp(const prmPositionCartesianSet & position)
 {
 drdMoveToGrip(m_gripper_servo_jp, false, m_device_id);
@@ -665,10 +669,10 @@ void mtsForceDimension::Configure(const std::string & filename)
         // create list of buttons based on device type
         std::list<mtsInterfaceProvided *> buttonInterfaces;
         if (dhdGetSystemType(deviceId) == DHD_DEVICE_FALCON) {
-            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Center"));
-            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Left"));
-            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Top"));
-            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Right"));
+            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "_center"));
+            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "_left"));
+            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "_top"));
+            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "_right"));
         }
 
         // create the device data and add to list of devices

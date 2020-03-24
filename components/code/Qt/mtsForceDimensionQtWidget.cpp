@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2014-07-21
 
-  (C) Copyright 2014-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -21,14 +21,25 @@ http://www.cisst.org/cisst/license.txt.
 
 // Qt include
 #include <QString>
+#include <QLabel>
 #include <QtGui>
 #include <QMessageBox>
 #include <QPushButton>
 
 // cisst
+#include <cisstVector/vctForceTorqueQtWidget.h>
+#include <cisstMultiTask/mtsManagerLocal.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
-#include <sawForceDimensionSDK/mtsForceDimensionQtWidget.h>
+#include <cisstMultiTask/mtsInterfaceProvided.h>
+#include <cisstMultiTask/mtsIntervalStatisticsQtWidget.h>
+#include <cisstMultiTask/mtsMessageQtWidget.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
+#include <cisstParameterTypes/prmEventButtonQtWidget.h>
+#include <cisstParameterTypes/prmPositionCartesianGetQtWidget.h>
+#include <cisstParameterTypes/prmStateJointQtWidget.h>
+#include <cisstParameterTypes/prmOperatingStateQtWidget.h>
+
+#include <sawForceDimensionSDK/mtsForceDimensionQtWidget.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsForceDimensionQtWidget, mtsComponent, std::string);
 
@@ -39,19 +50,21 @@ mtsForceDimensionQtWidget::mtsForceDimensionQtWidget(const std::string & compone
     QMMessage = new mtsMessageQtWidget();
     QPOState = new prmOperatingStateQtWidget();
 
-    // setup CISST interface
-    mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Device");
-    if (interfaceRequired) {
-        QMMessage->SetInterfaceRequired(interfaceRequired);
-        QPOState->SetInterfaceRequired(interfaceRequired);
-        interfaceRequired->AddFunction("measured_cp", Device.measured_cp);
-        interfaceRequired->AddFunction("measured_cf", Device.measured_cf);
-        interfaceRequired->AddFunction("gripper_measured_js", Device.gripper_measured_js);
-        interfaceRequired->AddFunction("servo_cf", Device.servo_cf);
-        interfaceRequired->AddFunction("GetPeriodStatistics", Device.GetPeriodStatistics);
-        interfaceRequired->AddFunction("Freeze", Device.Freeze);
-        interfaceRequired->AddFunction("SetGravityCompensation", Device.SetGravityCompensation);
+    // setup interface
+    m_device_interface = AddInterfaceRequired("Device");
+    if (m_device_interface) {
+        QMMessage->SetInterfaceRequired(m_device_interface);
+        QPOState->SetInterfaceRequired(m_device_interface);
+        m_device_interface->AddFunction("measured_cp", Device.measured_cp);
+        m_device_interface->AddFunction("measured_cf", Device.measured_cf);
+        m_device_interface->AddFunction("gripper_measured_js", Device.gripper_measured_js);
+        m_device_interface->AddFunction("servo_cf", Device.servo_cf);
+        m_device_interface->AddFunction("Freeze", Device.Freeze);
+        m_device_interface->AddFunction("SetGravityCompensation", Device.SetGravityCompensation);
+        m_device_interface->AddFunction("GetPeriodStatistics", Device.GetPeriodStatistics);
+        m_device_interface->AddFunction("get_button_names", Device.get_button_names);
     }
+
     setupUi();
     startTimer(TimerPeriodInMilliseconds); // ms
 }
@@ -66,6 +79,29 @@ void mtsForceDimensionQtWidget::Startup(void)
     CMN_LOG_CLASS_INIT_VERBOSE << "mtsForceDimensionQtWidget::Startup" << std::endl;
     if (!parent()) {
         show();
+    }
+    // get button names
+    typedef std::list<std::string> BList;
+    BList buttons;
+    if (Device.get_button_names.IsValid()) {
+        if (Device.get_button_names(buttons)) {
+            mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
+            // name of device we're connected to
+            std::string device_name =  m_device_interface->GetConnectedInterface()->GetComponent()->GetName();
+            const BList::const_iterator end = buttons.end();
+            for (BList::const_iterator iter = buttons.begin();
+                 iter != end;
+                 ++iter) {
+                QPBWidgetComponent->AddEventButton(*iter);
+            }
+            // connect all the interfaces
+            for (BList::const_iterator iter = buttons.begin();
+                 iter != end;
+                 ++iter) {
+                componentManager->Connect(QPBWidgetComponent->GetName(), *iter,
+                                          device_name, *iter);
+            }
+        }
     }
 }
 
@@ -104,16 +140,16 @@ void mtsForceDimensionQtWidget::setupUi(void)
     QFTWidget = new vctForceTorqueQtWidget();
     controlLayout->addWidget(QFTWidget);
 
-    // vectors of values
-    QGridLayout * gridLayout = new QGridLayout;
-    controlLayout->addLayout(gridLayout);
+    // gripper
+    QSJWidget = new prmStateJointQtWidget();
+    controlLayout->addWidget(QSJWidget);
 
-    gridLayout->setSpacing(1);
-    int row = 0;
-    gridLayout->addWidget(new QLabel("Gripper"), row, 0);
-    QLPositionGripper = new QLabel();
-    gridLayout->addWidget(QLPositionGripper, row, 1);
-    row++;
+    // buttons widget
+    QPBWidgetComponent = new prmEventButtonQtWidgetComponent(GetName() + "-buttons");
+    QPBWidgetComponent->SetNumberOfColumns(2);
+    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
+    componentManager->AddComponent(QPBWidgetComponent);
+    controlLayout->addWidget(QPBWidgetComponent);
 
     QPushButton * freezeButton = new QPushButton("Freeze");
     controlLayout->addWidget(freezeButton);
@@ -171,7 +207,7 @@ void mtsForceDimensionQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
 
     executionResult = Device.gripper_measured_js(m_gripper_measured_js);
     if (executionResult) {
-        QLPositionGripper->setNum(m_gripper_measured_js.Position().at(0) * cmn180_PI);
+        QSJWidget->SetValue(m_gripper_measured_js);
     }
 
     Device.GetPeriodStatistics(IntervalStatistics);

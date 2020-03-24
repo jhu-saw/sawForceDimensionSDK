@@ -64,7 +64,7 @@ int main(int argc, char * argv[])
     std::cout << "Options provided:" << std::endl << arguments << std::endl;
 
     // create the components
-    mtsForceDimension * forceDimension = new mtsForceDimension("ForcedimensionSDK");
+    mtsForceDimension * forceDimension = new mtsForceDimension("ForceDimensionSDK");
     forceDimension->Configure(jsonConfigFile);
 
     // add the components to the component manager
