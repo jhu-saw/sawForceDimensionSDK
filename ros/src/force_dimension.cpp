@@ -24,8 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawForceDimensionSDK/mtsForceDimension.h>
 #include <sawForceDimensionSDK/mtsForceDimensionQtWidget.h>
 
-#include <ros/ros.h>
-#include <cisst_ros_bridge/mtsROSBridge.h>
+#include <cisst_ros_crtk/mts_ros_crtk_bridge.h>
 
 #include <QApplication>
 #include <QMainWindow>
@@ -41,7 +40,7 @@ int main(int argc, char * argv[])
     cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
 
     // create ROS node handle
-    ros::init(argc, argv, "dvrk", ros::init_options::AnonymousName);
+    ros::init(argc, argv, "force_dimension", ros::init_options::AnonymousName);
     ros::NodeHandle rosNodeHandle;
 
     // parse options
@@ -81,14 +80,11 @@ int main(int argc, char * argv[])
     mtsManagerLocal * componentManager = mtsComponentManager::GetInstance();
     componentManager->AddComponent(forceDimension);
 
-    // ROS bridge for publishers
-    mtsROSBridge * pub_bridge = new mtsROSBridge("force_dimension_pub", rosPeriod, &rosNodeHandle);
-    // separate thread to spin, i.e. subscribe and events
-    mtsROSBridge * spin_bridge = new mtsROSBridge("force_dimension_spin", 0.1 * cmn_ms, &rosNodeHandle);
-    spin_bridge->PerformsSpin(true);
-    componentManager->AddComponent(pub_bridge);
-    componentManager->AddComponent(spin_bridge);
-
+    // ROS CRTK bridge
+    mts_ros_crtk_bridge * crtk_bridge
+        = new mts_ros_crtk_bridge("force_dimension_crtk_bridge", &rosNodeHandle);
+    componentManager->AddComponent(crtk_bridge);
+    
     // create a Qt user interface
     QApplication application(argc, argv);
     cmnQt::QApplicationExitsOnCtrlC();
@@ -119,81 +115,9 @@ int main(int argc, char * argv[])
         componentManager->Connect(deviceWidget->GetName(), "Device",
                                   forceDimension->GetName(), name);
         tabWidget->addTab(deviceWidget, name.c_str());
-
-        // ROS namespace
-        std::string deviceNamespace = name + '/';
-        std::replace(deviceNamespace.begin(), deviceNamespace.end(), ' ', '_');
-        std::replace(deviceNamespace.begin(), deviceNamespace.end(), '-', '_');
-        std::replace(deviceNamespace.begin(), deviceNamespace.end(), '.', '_');
-
-        // motion commands
-        pub_bridge->AddPublisherFromCommandRead<prmPositionCartesianGet, geometry_msgs::TransformStamped>
-            (name, "measured_cp",
-             deviceNamespace + "measured_cp");
-        pub_bridge->AddPublisherFromCommandRead<prmVelocityCartesianGet, geometry_msgs::TwistStamped>
-            (name, "measured_cv",
-             deviceNamespace + "measured_cv");
-        pub_bridge->AddPublisherFromCommandRead<prmForceCartesianGet, geometry_msgs::WrenchStamped>
-            (name, "measured_cf",
-             deviceNamespace + "measured_cf");
-        pub_bridge->AddPublisherFromCommandRead<prmStateJoint, sensor_msgs::JointState>
-            (name, "gripper_measured_js",
-             deviceNamespace + "gripper/measured_js");
-        pub_bridge->AddPublisherFromCommandRead<prmPositionCartesianGet, geometry_msgs::TransformStamped>
-            (name, "setpoint_cp",
-             deviceNamespace + "setpoint_cp");
-        spin_bridge->AddSubscriberToCommandWrite<prmPositionCartesianSet, geometry_msgs::TransformStamped>
-            (name, "servo_cp",
-             deviceNamespace + "servo_cp");
-        spin_bridge->AddSubscriberToCommandWrite<prmForceCartesianSet, geometry_msgs::WrenchStamped>
-            (name, "servo_cf",
-             deviceNamespace + "servo_cf");
-        spin_bridge->AddSubscriberToCommandWrite<prmPositionCartesianSet, geometry_msgs::TransformStamped>
-            (name, "move_cp",
-             deviceNamespace + "move_cp");
-
-        // device state
-        spin_bridge->AddSubscriberToCommandWrite<std::string, crtk_msgs::StringStamped>
-            (name, "state_command",
-             deviceNamespace + "state_command");
-        spin_bridge->AddPublisherFromEventWrite<prmOperatingState, crtk_msgs::operating_state>
-            (name, "operating_state",
-             deviceNamespace + "operating_state");
-        spin_bridge->AddServiceFromCommandRead<prmOperatingState, crtk_msgs::trigger_operating_state>
-            (name, "operating_state",
-             deviceNamespace + "operating_state");
-
-        // messages
-        spin_bridge->AddLogFromEventWrite(name, "Error",
-                                          mtsROSEventWriteLog::ROS_LOG_ERROR);
-        spin_bridge->AddLogFromEventWrite(name, "Warning",
-                                          mtsROSEventWriteLog::ROS_LOG_WARN);
-        spin_bridge->AddLogFromEventWrite(name, "Status",
-                                          mtsROSEventWriteLog::ROS_LOG_INFO);
-
-        // Connect
-        componentManager->Connect(pub_bridge->GetName(), name,
-                                  forceDimension->GetName(), name);
-        componentManager->Connect(spin_bridge->GetName(), name,
-                                  forceDimension->GetName(), name);
-
-        // Buttons
-        NamesType buttons;
-        forceDimension->GetButtonNames(name, buttons);
-        const NamesType::iterator endButtons = buttons.end();
-        NamesType::iterator button;
-        for (button = buttons.begin();
-             button != endButtons;
-             ++button) {
-            // sawForceDimension button names are device-button, use device/button for ROS
-            std::string rosButton = *button;
-            std::replace(rosButton.begin(), rosButton.end(), '-', '/');
-            std::replace(rosButton.begin(), rosButton.end(), '.', '_');
-            spin_bridge->AddPublisherFromEventWrite<prmEventButton, sensor_msgs::Joy>
-                (*button, "Button", rosButton);
-            componentManager->Connect(spin_bridge->GetName(), *button,
-                                      forceDimension->GetName(), *button);
-        }
+        crtk_bridge->bridge_interface_provided(forceDimension->GetName(),
+                                               name,
+                                               rosPeriod);
     }
 
     // custom user components
