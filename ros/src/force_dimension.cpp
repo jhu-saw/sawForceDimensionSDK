@@ -84,7 +84,7 @@ int main(int argc, char * argv[])
     mts_ros_crtk_bridge * crtk_bridge
         = new mts_ros_crtk_bridge("force_dimension_crtk_bridge", &rosNodeHandle);
     componentManager->AddComponent(crtk_bridge);
-    
+
     // create a Qt user interface
     QApplication application(argc, argv);
     cmnQt::QApplicationExitsOnCtrlC();
@@ -94,8 +94,6 @@ int main(int argc, char * argv[])
 
     // organize all widgets in a tab widget
     QTabWidget * tabWidget = new QTabWidget;
-
-    // device
     mtsForceDimensionQtWidget * deviceWidget;
 
     // configure all components
@@ -107,7 +105,6 @@ int main(int argc, char * argv[])
     for (device = devices.begin();
          device != endDevices;
          ++device) {
-        // Qt
         std::string name = *device;
         deviceWidget = new mtsForceDimensionQtWidget(name + "-gui");
         deviceWidget->Configure();

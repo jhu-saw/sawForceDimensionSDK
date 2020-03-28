@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2014-2016 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2014-2020 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -31,7 +31,7 @@ if (cisst_FOUND_AS_REQUIRED)
   # for Qt generated header files
   include_directories (${CMAKE_CURRENT_BINARY_DIR})
   if (CISST_HAS_QT4)
-    qt4_wrap_cpp (SAW_ATRACSYS_FUSION_TRACK_QT_WRAP_CPP
+    qt4_wrap_cpp (SAW_FORCE_DIMENSION_SDK_QT_WRAP_CPP
                   ${sawForceDimensionSDK_HEADER_DIR}/mtsForceDimensionQtWidget.h)
   else (CISST_HAS_QT4)
     set (CMAKE_AUTOMOC ON)
@@ -40,7 +40,7 @@ if (cisst_FOUND_AS_REQUIRED)
   add_library (sawForceDimensionSDKQt
                ${sawForceDimensionSDK_HEADER_DIR}/mtsForceDimensionQtWidget.h
                mtsForceDimensionQtWidget.cpp
-               ${SAW_ATRACSYS_FUSION_TRACK_QT_WRAP_CPP})
+               ${SAW_FORCE_DIMENSION_SDK_QT_WRAP_CPP})
   set_property (TARGET sawForceDimensionSDKQt PROPERTY FOLDER "sawForceDimensionSDK")
   cisst_target_link_libraries (sawForceDimensionSDKQt ${REQUIRED_CISST_LIBRARIES})
 

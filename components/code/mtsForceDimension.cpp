@@ -669,10 +669,10 @@ void mtsForceDimension::Configure(const std::string & filename)
         // create list of buttons based on device type
         std::list<mtsInterfaceProvided *> buttonInterfaces;
         if (dhdGetSystemType(deviceId) == DHD_DEVICE_FALCON) {
-            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "_center"));
-            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "_left"));
-            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "_top"));
-            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "_right"));
+            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Center"));
+            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Left"));
+            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Top"));
+            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Right"));
         }
 
         // create the device data and add to list of devices

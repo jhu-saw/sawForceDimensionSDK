@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2014-07-17
 
-  (C) Copyright 2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -17,7 +17,7 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 // check if this module is build as a DLL
-#ifdef sawAtracsysFusionTrackQt_EXPORTS
+#ifdef sawForceDimensionQt_EXPORTS
 #define CISST_THIS_LIBRARY_AS_DLL
 #endif
 
