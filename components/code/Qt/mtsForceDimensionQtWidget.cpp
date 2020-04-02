@@ -61,7 +61,7 @@ mtsForceDimensionQtWidget::mtsForceDimensionQtWidget(const std::string & compone
         m_device_interface->AddFunction("servo_cf", Device.servo_cf);
         m_device_interface->AddFunction("Freeze", Device.Freeze);
         m_device_interface->AddFunction("SetGravityCompensation", Device.SetGravityCompensation);
-        m_device_interface->AddFunction("GetPeriodStatistics", Device.GetPeriodStatistics);
+        m_device_interface->AddFunction("period_statistics", Device.period_statistics);
         m_device_interface->AddFunction("get_button_names", Device.get_button_names);
     }
 
@@ -210,7 +210,7 @@ void mtsForceDimensionQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
         QSJWidget->SetValue(m_gripper_measured_js);
     }
 
-    Device.GetPeriodStatistics(IntervalStatistics);
+    Device.period_statistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
 }
 

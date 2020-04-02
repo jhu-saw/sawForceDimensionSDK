@@ -192,7 +192,7 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
                                    prmOperatingState());
         // stats
         m_interface->AddCommandReadState(*m_state_table, m_state_table->PeriodStats,
-                                         "GetPeriodStatistics");
+                                         "period_statistics");
     }
 
     // buttons

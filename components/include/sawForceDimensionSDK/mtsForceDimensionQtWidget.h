@@ -73,7 +73,7 @@ class CISST_EXPORT mtsForceDimensionQtWidget : public QWidget, public mtsCompone
         mtsFunctionWrite servo_cf;
         mtsFunctionVoid Freeze;
         mtsFunctionWrite SetGravityCompensation;
-        mtsFunctionRead GetPeriodStatistics;
+        mtsFunctionRead period_statistics;
         mtsFunctionRead get_button_names;
     } Device;
 
