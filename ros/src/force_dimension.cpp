@@ -47,6 +47,7 @@ int main(int argc, char * argv[])
     cmnCommandLineOptions options;
     std::string jsonConfigFile = "";
     double rosPeriod = 2.0 * cmn_ms;
+    double tfPeriod = 20.0 * cmn_ms;
     std::list<std::string> managerConfig;
 
     options.AddOptionOneValue("j", "json-config",
@@ -55,6 +56,9 @@ int main(int argc, char * argv[])
     options.AddOptionOneValue("p", "ros-period",
                               "period in seconds to read all tool positions (default 0.002, 2 ms, 500Hz).  There is no point to have a period higher than the device",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &rosPeriod);
+    options.AddOptionOneValue("P", "tf-ros-period",
+                              "period in seconds to read all components and broadcast tf2 (default 0.02, 20 ms, 50Hz).  There is no point to have a period higher than the arm component's period",
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &tfPeriod);
     options.AddOptionMultipleValues("m", "component-manager",
                                     "JSON files to configure component manager",
                                     cmnCommandLineOptions::OPTIONAL_OPTION, &managerConfig);
@@ -113,9 +117,9 @@ int main(int argc, char * argv[])
                                   forceDimension->GetName(), name);
         tabWidget->addTab(deviceWidget, name.c_str());
         crtk_bridge->bridge_interface_provided(forceDimension->GetName(),
-                                               name,
-                                               rosPeriod);
+                                               name, rosPeriod, tfPeriod);
     }
+    crtk_bridge->Connect();
 
     // custom user components
     if (!componentManager->ConfigureJSON(managerConfig)) {
