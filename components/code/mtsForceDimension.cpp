@@ -160,16 +160,16 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
         m_interface->AddCommandReadState(*m_state_table, m_measured_cf,
                                          "measured_cf");
         m_interface->AddCommandReadState(*m_state_table, m_gripper_measured_js,
-                                         "gripper_measured_js");
+                                         "gripper/measured_js");
         m_interface->AddCommandReadState(*m_state_table, m_setpoint_cp,
                                          "setpoint_cp");
         // commands
         m_interface->AddCommandWrite(&mtsForceDimensionDevice::servo_cp,
                                      this, "servo_cp");
         m_interface->AddCommandWrite(&mtsForceDimensionDevice::servo_cf,
-                                     this, "servo_cf");
+                                     this, "body/servo_cf");
         m_interface->AddCommandWrite(&mtsForceDimensionDevice::gripper_servo_jf,
-                                     this, "gripper_servo_jf");
+                                     this, "gripper/servo_jf");
         m_interface->AddCommandWrite(&mtsForceDimensionDevice::move_cp,
                                      this, "move_cp");
         m_interface->AddCommandWrite(&mtsForceDimensionDevice::SetGravityCompensation,
@@ -437,7 +437,7 @@ void mtsForceDimensionDevice::SetControlMode(const mtsForceDimension::ControlMod
         drdRegulateRot(false, m_device_id);
         drdRegulateGrip(false, m_device_id);
         if (drdStart(m_device_id) < 0) {
-            m_interface->SendError(m_name + ": failed to start control look, "
+            m_interface->SendError(m_name + ": failed to start control loop, "
                                    + dhdErrorGetLastStr() + " [id:" + m_device_id_string + "]");
         }
         // start from current position
