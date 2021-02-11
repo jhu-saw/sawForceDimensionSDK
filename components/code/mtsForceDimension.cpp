@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-11-10
 
-  (C) Copyright 2016-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -69,9 +69,7 @@ protected:
     void servo_cf(const prmForceCartesianSet & newForce);
     void move_cp(const prmPositionCartesianSet & newPosition);
     void gripper_servo_jf(const prmForceTorqueJointSet & effortGripper);
-    void SetGravityCompensation(const bool & gravityCompensation);
-    void LockOrientation(const vctMatRot3 & orientation);
-    void UnlockOrientation(void);
+    void use_gravity_compensation(const bool & gravityCompensation);
     void Freeze(void);
 
     int m_device_id;
@@ -97,7 +95,7 @@ protected:
     prmForceCartesianGet m_measured_cf;
 
     prmStateJoint m_gripper_measured_js;
-    vctMatRot3 m_rotation_offset, mRawOrientation;
+    vctMatRot3 m_orientation;
 
     mtsForceDimension::ControlModeType mControlMode;
 
@@ -172,12 +170,8 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
                                      this, "gripper/servo_jf");
         m_interface->AddCommandWrite(&mtsForceDimensionDevice::move_cp,
                                      this, "move_cp");
-        m_interface->AddCommandWrite(&mtsForceDimensionDevice::SetGravityCompensation,
-                                     this, "SetGravityCompensation");
-        m_interface->AddCommandWrite(&mtsForceDimensionDevice::LockOrientation,
-                                     this, "LockOrientation");
-        m_interface->AddCommandVoid(&mtsForceDimensionDevice::UnlockOrientation,
-                                    this, "UnlockOrientation");
+        m_interface->AddCommandWrite(&mtsForceDimensionDevice::use_gravity_compensation,
+                                     this, "use_gravity_compensation");
         m_interface->AddCommandVoid(&mtsForceDimensionDevice::Freeze,
                                     this, "Freeze");
         // configuration
@@ -329,11 +323,11 @@ void mtsForceDimensionDevice::GetRobotData(void)
                                       &m_measured_cp.Position().Translation().Z(),
                                       rotation,
                                       m_device_id);
-    mRawOrientation.Row(0).Assign(rotation[0]);
-    mRawOrientation.Row(1).Assign(rotation[1]);
-    mRawOrientation.Row(2).Assign(rotation[2]);
+    m_orientation.Row(0).Assign(rotation[0]);
+    m_orientation.Row(1).Assign(rotation[1]);
+    m_orientation.Row(2).Assign(rotation[2]);
     // apply rotation offset
-    m_measured_cp.Position().Rotation() = mRawOrientation * m_rotation_offset;
+    m_measured_cp.Position().Rotation() = m_orientation;
     m_measured_cp.Valid() = true;
 
     // velocity
@@ -479,7 +473,6 @@ void mtsForceDimensionDevice::servo_cp(const prmPositionCartesianSet & position)
     SetControlMode(mtsForceDimension::SERVO_CP);
     m_servo_cp = position;
     m_new_servo_cp = true;
-    m_rotation_offset = mRawOrientation.Inverse() * position.Goal().Rotation();
 }
 
 void mtsForceDimensionDevice::move_cp(const prmPositionCartesianSet & position)
@@ -491,7 +484,6 @@ void mtsForceDimensionDevice::move_cp(const prmPositionCartesianSet & position)
                  m_servo_cp.Goal().Translation().Z(),
                  false,
                  m_device_id);
-    m_rotation_offset = mRawOrientation.Inverse() * position.Goal().Rotation();
     m_operating_state.IsBusy() = true;
     m_operating_state_event(m_operating_state);
 }
@@ -502,11 +494,6 @@ void mtsForceDimensionDevice::gripper_move_jp(const prmPositionCartesianSet & po
 drdMoveToGrip(m_gripper_servo_jp, false, m_device_id);
 */
 
-void mtsForceDimensionDevice::UnlockOrientation(void)
-{
-    // m_rotation_offset = vctMatRot3();
-}
-
 void mtsForceDimensionDevice::Freeze(void)
 {
     SetControlMode(mtsForceDimension::SERVO_CP);
@@ -514,17 +501,7 @@ void mtsForceDimensionDevice::Freeze(void)
     dhdGetGripperGap(&m_gripper_servo_jp, m_device_id);
 }
 
-void mtsForceDimensionDevice::LockOrientation(const vctMatRot3 & orientation)
-{
-    // Rc: rotation current
-    // Rd: rotation desired
-    // Ro: rotation offset to make the rotation looks like desired
-    // Rc * Ro = Rd
-    // Ro = Rc_transpose * Rd
-    m_rotation_offset = mRawOrientation.Inverse() * orientation;
-}
-
-void mtsForceDimensionDevice::SetGravityCompensation(const bool & gravity)
+void mtsForceDimensionDevice::use_gravity_compensation(const bool & gravity)
 {
     if (gravity) {
         dhdSetGravityCompensation(DHD_ON, m_device_id);
