@@ -57,8 +57,8 @@ mtsForceDimensionQtWidget::mtsForceDimensionQtWidget(const std::string & compone
         QPOState->SetInterfaceRequired(m_device_interface);
         m_device_interface->AddFunction("measured_cp", Device.measured_cp);
         m_device_interface->AddFunction("measured_cf", Device.measured_cf);
-        m_device_interface->AddFunction("gripper_measured_js", Device.gripper_measured_js);
-        m_device_interface->AddFunction("servo_cf", Device.servo_cf);
+        m_device_interface->AddFunction("gripper/measured_js", Device.gripper_measured_js);
+        m_device_interface->AddFunction("body/servo_cf", Device.servo_cf);
         m_device_interface->AddFunction("Freeze", Device.Freeze);
         m_device_interface->AddFunction("SetGravityCompensation", Device.SetGravityCompensation);
         m_device_interface->AddFunction("period_statistics", Device.period_statistics);
