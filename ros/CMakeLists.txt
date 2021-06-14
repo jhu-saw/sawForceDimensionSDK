@@ -69,6 +69,9 @@ if (cisst_FOUND_AS_REQUIRED)
                            ${catkin_LIBRARIES})
     cisst_target_link_libraries (force_dimension ${REQUIRED_CISST_LIBRARIES})
 
+    # for python CRTK client
+    catkin_python_setup ()
+
   else (sawForceDimensionSDK_FOUND)
     message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires sawForceDimensionSDK")
   endif (sawForceDimensionSDK_FOUND)
