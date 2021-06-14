@@ -66,7 +66,7 @@ protected:
     mtsFunctionWrite m_operating_state_event;
 
     void servo_cp(const prmPositionCartesianSet & newPosition);
-    void servo_cf(const prmForceCartesianSet & newForce);
+    void body_servo_cf(const prmForceCartesianSet & newForce);
     void move_cp(const prmPositionCartesianSet & newPosition);
     void gripper_servo_jf(const prmForceTorqueJointSet & effortGripper);
     void use_gravity_compensation(const bool & gravityCompensation);
@@ -92,7 +92,7 @@ protected:
 
     prmPositionCartesianGet m_measured_cp, m_setpoint_cp;
     prmVelocityCartesianGet m_measured_cv;
-    prmForceCartesianGet m_measured_cf;
+    prmForceCartesianGet m_body_measured_cf;
 
     prmStateJoint m_gripper_measured_js;
     vctMatRot3 m_orientation;
@@ -101,7 +101,7 @@ protected:
 
     bool m_new_servo_cp;
     prmPositionCartesianSet m_servo_cp;
-    prmForceCartesianSet m_servo_cf;
+    prmForceCartesianSet m_body_servo_cf;
     double m_gripper_servo_jf;
     double m_gripper_servo_jp;
 };
@@ -117,6 +117,31 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
     m_state_table(stateTable),
     m_interface(interfaceProvided)
 {
+
+    // set gripper direction
+    if (dhdIsLeftHanded(m_device_id)) {
+        m_gripper_direction = -1.0;
+    } else {
+        m_gripper_direction = 1.0;
+    }
+    
+    // get range for joints
+    // this needs to be tested on actual device
+#if 0
+    vctDoubleVec jMin(DHD_MAX_DOF);
+    vctDoubleVec jMax(DHD_MAX_DOF);
+    int result = dhdGetJointAngleRange(jMin.Pointer(), jMax.Pointer(), m_device_id);
+    std::cerr << "result: " << result << std::endl
+              << jMin << std::endl
+              << jMax << std::endl;
+    
+    std::cerr << "has wrist: " << dhdHasWrist(m_device_id) << std::endl;
+    
+    std::cerr << "has gripper: " << dhdHasGripper(m_device_id) << std::endl;
+    
+    std::cerr << "has active gripper: " << dhdHasActiveGripper(m_device_id) << std::endl;
+#endif
+
     std::stringstream idString;
     idString << deviceId;
     m_device_id_string = idString.str();
@@ -127,7 +152,7 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
     m_new_servo_cp = false;
     mControlMode = mtsForceDimension::UNDEFINED;
 
-    m_servo_cf.Force().SetAll(0.0);
+    m_body_servo_cf.Force().SetAll(0.0);
     m_gripper_servo_jf = 0.0;
     m_gripper_direction = 1.0;
 
@@ -140,12 +165,12 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
     m_state_table->AddData(m_operating_state, "operating_state");
     m_state_table->AddData(m_measured_cp, "measured_cp");
     m_state_table->AddData(m_measured_cv, "measured_cv");
-    m_state_table->AddData(m_measured_cf, "measured_cf");
+    m_state_table->AddData(m_body_measured_cf, "body/measured_cf");
     m_state_table->AddData(m_setpoint_cp, "setpoint_cp");
     m_gripper_measured_js.Position().SetSize(1);
     m_gripper_measured_js.Velocity().SetSize(1);
     m_gripper_measured_js.Effort().SetSize(1);
-    m_state_table->AddData(m_gripper_measured_js, "gripper_measured_js");
+    m_state_table->AddData(m_gripper_measured_js, "gripper/measured_js");
 
     if (m_interface) {
         // system messages
@@ -155,8 +180,8 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
                                          "measured_cp");
         m_interface->AddCommandReadState(*m_state_table, m_measured_cv,
                                          "measured_cv");
-        m_interface->AddCommandReadState(*m_state_table, m_measured_cf,
-                                         "measured_cf");
+        m_interface->AddCommandReadState(*m_state_table, m_body_measured_cf,
+                                         "body/measured_cf");
         m_interface->AddCommandReadState(*m_state_table, m_gripper_measured_js,
                                          "gripper/measured_js");
         m_interface->AddCommandReadState(*m_state_table, m_setpoint_cp,
@@ -164,7 +189,7 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
         // commands
         m_interface->AddCommandWrite(&mtsForceDimensionDevice::servo_cp,
                                      this, "servo_cp");
-        m_interface->AddCommandWrite(&mtsForceDimensionDevice::servo_cf,
+        m_interface->AddCommandWrite(&mtsForceDimensionDevice::body_servo_cf,
                                      this, "body/servo_cf");
         m_interface->AddCommandWrite(&mtsForceDimensionDevice::gripper_servo_jf,
                                      this, "gripper/servo_jf");
@@ -223,8 +248,7 @@ void mtsForceDimensionDevice::Startup(void)
     }
 
     // set gripper direction
-    if (dhdIsLeftHanded(m_device_id)) {
-        m_gripper_direction = -1.0;
+    if (m_gripper_direction == -1.0) {
         m_interface->SendStatus(m_name + ": is left handed");
     } else {
         m_interface->SendStatus(m_name + ": is right handed or symmetrical");
@@ -252,12 +276,12 @@ void mtsForceDimensionDevice::Run(void)
     // control mode
     switch (mControlMode) {
     case mtsForceDimension::SERVO_CF:
-        dhdSetForceAndTorqueAndGripperForce(m_servo_cf.Force()[0],
-                                            m_servo_cf.Force()[1],
-                                            m_servo_cf.Force()[2],
-                                            m_servo_cf.Force()[3],
-                                            m_servo_cf.Force()[4],
-                                            m_servo_cf.Force()[5],
+        dhdSetForceAndTorqueAndGripperForce(m_body_servo_cf.Force()[0],
+                                            m_body_servo_cf.Force()[1],
+                                            m_body_servo_cf.Force()[2],
+                                            m_body_servo_cf.Force()[3],
+                                            m_body_servo_cf.Force()[4],
+                                            m_body_servo_cf.Force()[5],
                                             m_gripper_direction * m_gripper_servo_jf,
                                             m_device_id);
         m_setpoint_cp.Position().Assign(m_measured_cp.Position());
@@ -342,15 +366,15 @@ void mtsForceDimensionDevice::GetRobotData(void)
     m_measured_cv.SetValid(true);
 
     // force
-    dhdGetForceAndTorqueAndGripperForce(&m_measured_cf.Force()[0],
-                                        &m_measured_cf.Force()[1],
-                                        &m_measured_cf.Force()[2],
-                                        &m_measured_cf.Force()[3],
-                                        &m_measured_cf.Force()[4],
-                                        &m_measured_cf.Force()[5],
+    dhdGetForceAndTorqueAndGripperForce(&m_body_measured_cf.Force()[0],
+                                        &m_body_measured_cf.Force()[1],
+                                        &m_body_measured_cf.Force()[2],
+                                        &m_body_measured_cf.Force()[3],
+                                        &m_body_measured_cf.Force()[4],
+                                        &m_body_measured_cf.Force()[5],
                                         &m_gripper_measured_js.Effort().at(0),
                                         m_device_id);
-    m_measured_cf.SetValid(true);
+    m_body_measured_cf.SetValid(true);
 
     // gripper
     dhdGetGripperAngleRad(&m_gripper_measured_js.Position().at(0), m_device_id);
@@ -442,7 +466,7 @@ void mtsForceDimensionDevice::SetControlMode(const mtsForceDimension::ControlMod
         drdRegulatePos(false, m_device_id);
         drdStop(true, m_device_id);
         // start with 0 forces
-        m_servo_cf.Force().SetAll(0.0);
+        m_body_servo_cf.Force().SetAll(0.0);
         m_gripper_servo_jf = 0.0;
         break;
     default:
@@ -452,10 +476,10 @@ void mtsForceDimensionDevice::SetControlMode(const mtsForceDimension::ControlMod
     mControlMode = mode;
 }
 
-void mtsForceDimensionDevice::servo_cf(const prmForceCartesianSet & wrench)
+void mtsForceDimensionDevice::body_servo_cf(const prmForceCartesianSet & wrench)
 {
     SetControlMode(mtsForceDimension::SERVO_CF);
-    m_servo_cf = wrench;
+    m_body_servo_cf = wrench;
 }
 
 void mtsForceDimensionDevice::gripper_servo_jf(const prmForceTorqueJointSet & effortGripper)
@@ -651,7 +675,7 @@ void mtsForceDimension::Configure(const std::string & filename)
             buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Top"));
             buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Right"));
         }
-
+        
         // create the device data and add to list of devices
         mtsStateTable * stateTable
             = new mtsStateTable(StateTable.GetHistoryLength(),

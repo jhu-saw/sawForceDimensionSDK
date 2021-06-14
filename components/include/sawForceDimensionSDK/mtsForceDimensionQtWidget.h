@@ -68,9 +68,9 @@ class CISST_EXPORT mtsForceDimensionQtWidget : public QWidget, public mtsCompone
 
     struct {
         mtsFunctionRead measured_cp;
-        mtsFunctionRead measured_cf;
+        mtsFunctionRead body_measured_cf;
         mtsFunctionRead gripper_measured_js;
-        mtsFunctionWrite servo_cf;
+        mtsFunctionWrite body_servo_cf;
         mtsFunctionVoid Freeze;
         mtsFunctionWrite use_gravity_compensation;
         mtsFunctionRead period_statistics;
@@ -79,7 +79,7 @@ class CISST_EXPORT mtsForceDimensionQtWidget : public QWidget, public mtsCompone
 
  private:
     prmPositionCartesianGet m_measured_cp;
-    prmForceCartesianGet m_measured_cf;
+    prmForceCartesianGet m_body_measured_cf;
     prmStateJoint m_gripper_measured_js;
 
     prmPositionCartesianGetQtWidget * QPCGWidget;

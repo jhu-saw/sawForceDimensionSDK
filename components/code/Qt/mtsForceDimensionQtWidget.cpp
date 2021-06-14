@@ -56,9 +56,9 @@ mtsForceDimensionQtWidget::mtsForceDimensionQtWidget(const std::string & compone
         QMMessage->SetInterfaceRequired(m_device_interface);
         QPOState->SetInterfaceRequired(m_device_interface);
         m_device_interface->AddFunction("measured_cp", Device.measured_cp);
-        m_device_interface->AddFunction("measured_cf", Device.measured_cf);
+        m_device_interface->AddFunction("body/measured_cf", Device.body_measured_cf);
         m_device_interface->AddFunction("gripper/measured_js", Device.gripper_measured_js);
-        m_device_interface->AddFunction("body/servo_cf", Device.servo_cf);
+        m_device_interface->AddFunction("body/servo_cf", Device.body_servo_cf);
         m_device_interface->AddFunction("Freeze", Device.Freeze);
         m_device_interface->AddFunction("use_gravity_compensation", Device.use_gravity_compensation);
         m_device_interface->AddFunction("period_statistics", Device.period_statistics);
@@ -199,10 +199,10 @@ void mtsForceDimensionQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
         QPCGWidget->SetValue(m_measured_cp);
     }
 
-    executionResult = Device.measured_cf(m_measured_cf);
+    executionResult = Device.body_measured_cf(m_body_measured_cf);
     if (executionResult) {
-        QFTWidget->SetValue(m_measured_cf.F(), m_measured_cf.T(),
-                            m_measured_cf.Timestamp());
+        QFTWidget->SetValue(m_body_measured_cf.F(), m_body_measured_cf.T(),
+                            m_body_measured_cf.Timestamp());
     }
 
     executionResult = Device.gripper_measured_js(m_gripper_measured_js);
@@ -223,5 +223,5 @@ void mtsForceDimensionQtWidget::SlotGravityCompensation(void)
 {
     Device.use_gravity_compensation(true);
     prmForceCartesianSet wrench;
-    Device.servo_cf(wrench);
+    Device.body_servo_cf(wrench);
 }
