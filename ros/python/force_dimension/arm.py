@@ -19,11 +19,24 @@ class arm(object):
     """Simple arm API wrapping around ROS messages
     """
 
+    # class to contain gripper methods
+    class __Gripper:
+        def __init__(self, ros_namespace, expected_interval, operating_state_instance):
+            self.__crtk_utils = crtk.utils(self, ros_namespace, expected_interval, operating_state_instance)
+            self.__crtk_utils.add_measured_js()
+            self.__crtk_utils.add_servo_jf()
+
+    # class to contain spatial/body cf methods
+    class __MeasuredServoCf:
+        def __init__(self, ros_namespace, expected_interval):
+            self.__crtk_utils = crtk.utils(self, ros_namespace, expected_interval)
+            self.__crtk_utils.add_measured_cf()
+            self.__crtk_utils.add_servo_cf()
+
     # initialize the arm
     def __init__(self, arm_name, ros_namespace = '', expected_interval = 0.01):
         # base class constructor in separate method so it can be called in derived classes
         self.__init_arm(arm_name, ros_namespace, expected_interval)
-
 
     def __init_arm(self, arm_name, ros_namespace, expected_interval):
         """Constructor.  This initializes a few data members.It
@@ -39,13 +52,18 @@ class arm(object):
         # crtk features
         self.__crtk_utils = crtk.utils(self, self.__full_ros_namespace, expected_interval)
 
-        # add crtk features that we need and are supported by the dVRK
+        # add crtk features that we need and are supported by the ForceDimensionSDK
         self.__crtk_utils.add_operating_state()
-        self.__crtk_utils.add_measured_js()
         self.__crtk_utils.add_measured_cp()
         self.__crtk_utils.add_measured_cv()
         self.__crtk_utils.add_servo_cp()
         self.__crtk_utils.add_servo_cf()
+        self.__crtk_utils.add_move_cp()
+
+        # cf in body reference frame
+        self.body = self.__MeasuredServoCf(self.__full_ros_namespace + '/body', expected_interval)
+        self.gripper = self.__Gripper(self._arm__full_ros_namespace + '/gripper', expected_interval,
+                                      operating_state_instance = self)
 
         # create node
         if not rospy.get_node_uri():
