@@ -41,7 +41,19 @@ Become superuser
 ```sh
 sudo su -
 ```
-then create rule:
+then create rule:f.body.servo_cf([5.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+In [7]: f.body.servo_cf([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+In [8]: p = f.measured_cp()
+
+In [9]: p
+Out[9]: 
+[[           1,           0,           0;
+            0,           1,           0;
+            0,           0,           1]
+[   -0.040937, -0.00489694,   0.0107565]]
+
 ```sh
 # go to udev rules directory
 cd /etc/udev/rules.d/
@@ -51,6 +63,18 @@ echo "SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"0403\", MODE=\"0666\"" > 80-usb-nov
 # restart udev
 udevadm control --reload-rules
 ```
+f.body.servo_cf([5.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+In [7]: f.body.servo_cf([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+In [8]: p = f.measured_cp()
+
+In [9]: p
+Out[9]: 
+[[           1,           0,           0;
+            0,           1,           0;
+            0,           0,           1]
+[   -0.040937, -0.00489694,   0.0107565]]
 
 Once this is done, test the provided examples in the SDK `bin` folder.  You should be able to run them without `sudo`. 
 
@@ -150,3 +174,7 @@ f.body.servo_cf([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 Besides ROS, the ATI Force Sensor component can also stream data to your application using the *sawOpenIGTLink* or *sawSocketStreamer* components.  See:
 * [sawOpenIGTLink](https://github.com/jhu-saw/sawOpenIGTLink)
 * [sawSocketStreamer](https://github.com/jhu-saw/sawSocketStreamer)
+
+# Misc
+
+* The current code sometimes fails to properly initialize the Novint Falcon.  To initialize it, you can use the example `encoders` provided in the `bin` directory for the SDK.
