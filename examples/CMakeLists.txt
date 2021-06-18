@@ -36,7 +36,7 @@ if (cisst_FOUND_AS_REQUIRED)
   endif ()
 
   # sawForceDimensionSDK has been compiled within cisst, we should find it automatically
-  find_package (sawForceDimensionSDK 1.1.0)
+  find_package (sawForceDimensionSDK 2.0.0)
 
   if (sawForceDimensionSDK_FOUND AND CISST_HAS_QT)
 

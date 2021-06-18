@@ -90,8 +90,8 @@ if (cisst_FOUND_AS_REQUIRED)
     set (sawForceDimensionSDK_LIBRARIES sawForceDimensionSDK ${force_dimension_sdk_LIBRARIES})
 
     # Set the version number
-    set (sawForceDimensionSDK_VERSION_MAJOR "1")
-    set (sawForceDimensionSDK_VERSION_MINOR "1")
+    set (sawForceDimensionSDK_VERSION_MAJOR "2")
+    set (sawForceDimensionSDK_VERSION_MINOR "0")
     set (sawForceDimensionSDK_VERSION_PATCH "0")
     set (sawForceDimensionSDK_VERSION "${sawForceDimensionSDK_VERSION_MAJOR}.${sawForceDimensionSDK_VERSION_MINOR}.${sawForceDimensionSDK_VERSION_PATCH}")
 
