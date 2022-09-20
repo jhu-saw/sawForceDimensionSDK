@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-11-10
 
-  (C) Copyright 2016-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -24,6 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawForceDimensionSDK/mtsForceDimension.h>
 #include <sawForceDimensionSDK/mtsForceDimensionQtWidget.h>
 
+#include <ros/ros.h>
 #include <cisst_ros_crtk/mts_ros_crtk_bridge.h>
 
 #include <QApplication>
