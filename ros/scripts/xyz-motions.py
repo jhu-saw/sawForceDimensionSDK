@@ -61,23 +61,23 @@ class example_application:
         duration = 3  # 3 seconds
         samples = duration / self.expected_interval
         print('starting x motion')
-        for i in xrange(int(samples)):
+        for i in range(int(samples)):
             goal.p[0] =  initial_cartesian_position.p[0] + amplitude *  (1.0 - math.cos(i * math.radians(360.0) / samples))
             self.arm.servo_cp(goal)
             rospy.sleep(self.expected_interval)
         print('starting y motion')
-        for i in xrange(int(samples)):
+        for i in range(int(samples)):
             goal.p[1] =  initial_cartesian_position.p[1] + amplitude *  (1.0 - math.cos(i * math.radians(360.0) / samples))
             self.arm.servo_cp(goal)
             rospy.sleep(self.expected_interval)
         print('starting z motion')
-        for i in xrange(int(samples)):
+        for i in range(int(samples)):
             goal.p[2] =  initial_cartesian_position.p[2] + amplitude *  (1.0 - math.cos(i * math.radians(360.0) / samples))
             self.arm.servo_cp(goal)
             rospy.sleep(self.expected_interval)
         # release the arm by sending zero wrench
         wrench = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        self.arm.servo_cf(wrench)
+        self.arm.body.servo_cf(wrench)
 
     # main method
     def run(self):
