@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2014-2020 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2014-2022 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -41,11 +41,15 @@ if (cisst_FOUND_AS_REQUIRED)
                ${sawForceDimensionSDK_HEADER_DIR}/mtsForceDimensionQtWidget.h
                mtsForceDimensionQtWidget.cpp
                ${SAW_FORCE_DIMENSION_SDK_QT_WRAP_CPP})
-  set_property (TARGET sawForceDimensionSDKQt PROPERTY FOLDER "sawForceDimensionSDK")
+  set_target_properties (sawForceDimensionSDKQt PROPERTIES
+                         VERSION ${sawForceDimensionSDK_VERSION}
+                         FOLDER "sawForceDimensionSDK")
   cisst_target_link_libraries (sawForceDimensionSDKQt ${REQUIRED_CISST_LIBRARIES})
 
-  # make sure the new library is known by the parent folder to add to the config file
-  set (sawForceDimensionSDKQt_LIBRARIES sawForceDimensionSDKQt PARENT_SCOPE)
+  install (TARGETS sawForceDimensionSDKQt COMPONENT sawForceDimensionSDK-Qt
+           RUNTIME DESTINATION bin
+           LIBRARY DESTINATION lib
+           ARCHIVE DESTINATION lib)
 
 else (cisst_FOUND_AS_REQUIRED)
   message ("Information: code will not be compiled, it requires ${REQUIRED_CISST_LIBRARIES}")
