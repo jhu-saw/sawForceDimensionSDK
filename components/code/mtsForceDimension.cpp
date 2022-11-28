@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-11-10
 
-  (C) Copyright 2016-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -70,7 +70,7 @@ protected:
     void move_cp(const prmPositionCartesianSet & newPosition);
     void gripper_servo_jf(const prmForceTorqueJointSet & effortGripper);
     void use_gravity_compensation(const bool & gravityCompensation);
-    void Freeze(void);
+    void hold(void);
 
     int m_device_id;
     std::string m_device_id_string;
@@ -197,8 +197,8 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
                                      this, "move_cp");
         m_interface->AddCommandWrite(&mtsForceDimensionDevice::use_gravity_compensation,
                                      this, "use_gravity_compensation");
-        m_interface->AddCommandVoid(&mtsForceDimensionDevice::Freeze,
-                                    this, "Freeze");
+        m_interface->AddCommandVoid(&mtsForceDimensionDevice::hold,
+                                    this, "hold");
         // configuration
         m_interface->AddCommandRead(&mtsForceDimensionDevice::GetButtonNames,
                                     this, "get_button_names");
@@ -518,7 +518,7 @@ void mtsForceDimensionDevice::gripper_move_jp(const prmPositionCartesianSet & po
 drdMoveToGrip(m_gripper_servo_jp, false, m_device_id);
 */
 
-void mtsForceDimensionDevice::Freeze(void)
+void mtsForceDimensionDevice::hold(void)
 {
     SetControlMode(mtsForceDimension::SERVO_CP);
     m_servo_cp.Goal().Assign(m_measured_cp.Position());

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2014-07-21
 
-  (C) Copyright 2014-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -59,7 +59,7 @@ mtsForceDimensionQtWidget::mtsForceDimensionQtWidget(const std::string & compone
         m_device_interface->AddFunction("body/measured_cf", Device.body_measured_cf);
         m_device_interface->AddFunction("gripper/measured_js", Device.gripper_measured_js);
         m_device_interface->AddFunction("body/servo_cf", Device.body_servo_cf);
-        m_device_interface->AddFunction("Freeze", Device.Freeze);
+        m_device_interface->AddFunction("hold", Device.hold);
         m_device_interface->AddFunction("use_gravity_compensation", Device.use_gravity_compensation);
         m_device_interface->AddFunction("period_statistics", Device.period_statistics);
         m_device_interface->AddFunction("get_button_names", Device.get_button_names);
@@ -151,10 +151,10 @@ void mtsForceDimensionQtWidget::setupUi(void)
     componentManager->AddComponent(QPBWidgetComponent);
     controlLayout->addWidget(QPBWidgetComponent);
 
-    QPushButton * freezeButton = new QPushButton("Freeze");
-    controlLayout->addWidget(freezeButton);
-    connect(freezeButton, SIGNAL(clicked()),
-            this, SLOT(SlotFreeze()));
+    QPushButton * holdButton = new QPushButton("Hold");
+    controlLayout->addWidget(holdButton);
+    connect(holdButton, SIGNAL(clicked()),
+            this, SLOT(SlotHold()));
 
     QPushButton * gravityCompensationButton = new QPushButton("Gravity compensation");
     controlLayout->addWidget(gravityCompensationButton);
@@ -214,9 +214,9 @@ void mtsForceDimensionQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     QMIntervalStatistics->SetValue(IntervalStatistics);
 }
 
-void mtsForceDimensionQtWidget::SlotFreeze(void)
+void mtsForceDimensionQtWidget::SlotHold(void)
 {
-    Device.Freeze();
+    Device.hold();
 }
 
 void mtsForceDimensionQtWidget::SlotGravityCompensation(void)
