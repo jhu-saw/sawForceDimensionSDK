@@ -41,19 +41,7 @@ Become superuser
 ```sh
 sudo su -
 ```
-then create rule:f.body.servo_cf([5.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-
-In [7]: f.body.servo_cf([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-
-In [8]: p = f.measured_cp()
-
-In [9]: p
-Out[9]: 
-[[           1,           0,           0;
-            0,           1,           0;
-            0,           0,           1]
-[   -0.040937, -0.00489694,   0.0107565]]
-
+then create rule:
 ```sh
 # go to udev rules directory
 cd /etc/udev/rules.d/
@@ -63,18 +51,6 @@ echo "SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"0403\", MODE=\"0666\"" > 80-usb-nov
 # restart udev
 udevadm control --reload-rules
 ```
-f.body.servo_cf([5.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-
-In [7]: f.body.servo_cf([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-
-In [8]: p = f.measured_cp()
-
-In [9]: p
-Out[9]: 
-[[           1,           0,           0;
-            0,           1,           0;
-            0,           0,           1]
-[   -0.040937, -0.00489694,   0.0107565]]
 
 Once this is done, test the provided examples in the SDK `bin` folder.  You should be able to run them without `sudo`. 
 
