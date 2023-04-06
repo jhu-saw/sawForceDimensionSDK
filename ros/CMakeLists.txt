@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2017-2021 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2017-2023 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -9,9 +9,8 @@
 #
 # --- end cisst license ---
 
-cmake_minimum_required (VERSION 2.8.3)
-
-project (force_dimension_ros)
+cmake_minimum_required (VERSION 3.10)
+project (force_dimension_ros VERSION 2.0.0)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
