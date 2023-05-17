@@ -640,6 +640,8 @@ void mtsForceDimension::Configure(const std::string & filename)
             hasSerial = false;
             CMN_LOG_CLASS_INIT_WARNING << "Configure: can't retrieve serial number for device "
                                        << i << ", id: " << deviceId << std::endl;
+        } else {
+            CMN_LOG_CLASS_INIT_WARNING << "Configure: found device with serial number: " << serialUShort << std::endl;
         }
         // for some reason, FALCON serial number is always 65535
         if (dhdGetSystemType(deviceId) == DHD_DEVICE_FALCON) {
