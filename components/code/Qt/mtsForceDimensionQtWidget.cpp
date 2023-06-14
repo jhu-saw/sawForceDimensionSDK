@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2014-07-21
 
-  (C) Copyright 2014-2022 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -58,9 +58,8 @@ mtsForceDimensionQtWidget::mtsForceDimensionQtWidget(const std::string & compone
         m_device_interface->AddFunction("measured_cp", Device.measured_cp);
         m_device_interface->AddFunction("body/measured_cf", Device.body_measured_cf);
         m_device_interface->AddFunction("gripper/measured_js", Device.gripper_measured_js);
-        m_device_interface->AddFunction("body/servo_cf", Device.body_servo_cf);
         m_device_interface->AddFunction("hold", Device.hold);
-        m_device_interface->AddFunction("use_gravity_compensation", Device.use_gravity_compensation);
+        m_device_interface->AddFunction("free", Device.free);
         m_device_interface->AddFunction("period_statistics", Device.period_statistics);
         m_device_interface->AddFunction("get_button_names", Device.get_button_names);
     }
@@ -156,10 +155,10 @@ void mtsForceDimensionQtWidget::setupUi(void)
     connect(holdButton, SIGNAL(clicked()),
             this, SLOT(SlotHold()));
 
-    QPushButton * gravityCompensationButton = new QPushButton("Gravity compensation");
-    controlLayout->addWidget(gravityCompensationButton);
-    connect(gravityCompensationButton, SIGNAL(clicked()),
-            this, SLOT(SlotGravityCompensation()));
+    QPushButton * freeButton = new QPushButton("Free");
+    controlLayout->addWidget(freeButton);
+    connect(freeButton, SIGNAL(clicked()),
+            this, SLOT(SlotFree()));
 
     controlLayout->addStretch();
 
@@ -219,9 +218,7 @@ void mtsForceDimensionQtWidget::SlotHold(void)
     Device.hold();
 }
 
-void mtsForceDimensionQtWidget::SlotGravityCompensation(void)
+void mtsForceDimensionQtWidget::SlotFree(void)
 {
-    Device.use_gravity_compensation(true);
-    prmForceCartesianSet wrench;
-    Device.body_servo_cf(wrench);
+    Device.free();
 }

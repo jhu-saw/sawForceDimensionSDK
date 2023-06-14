@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2014-07-21
 
-  (C) Copyright 2014-2022 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -55,7 +55,7 @@ class CISST_EXPORT mtsForceDimensionQtWidget : public QWidget, public mtsCompone
  private slots:
     void timerEvent(QTimerEvent * event);
     void SlotHold(void);
-    void SlotGravityCompensation(void);
+    void SlotFree(void);
 
  private:
     //! setup GUI
@@ -70,9 +70,8 @@ class CISST_EXPORT mtsForceDimensionQtWidget : public QWidget, public mtsCompone
         mtsFunctionRead measured_cp;
         mtsFunctionRead body_measured_cf;
         mtsFunctionRead gripper_measured_js;
-        mtsFunctionWrite body_servo_cf;
         mtsFunctionVoid hold;
-        mtsFunctionWrite use_gravity_compensation;
+        mtsFunctionVoid free;
         mtsFunctionRead period_statistics;
         mtsFunctionRead get_button_names;
     } Device;
