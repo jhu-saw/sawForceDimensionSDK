@@ -12,7 +12,6 @@
 # --- end cisst license ---
 
 import crtk
-import rospy
 import PyKDL
 
 class arm(object):
@@ -58,12 +57,6 @@ class arm(object):
         self.body = self.__MeasuredServoCf(self.__ral.create_child('/body'), expected_interval)
         self.gripper = self.__Gripper(self.__ral.create_child('/gripper'), expected_interval,
                                       operating_state_instance = self)
-
-        # create node
-        if not rospy.get_node_uri():
-            rospy.init_node('arm_api', anonymous = True, log_level = rospy.WARN)
-        else:
-            rospy.logdebug(rospy.get_caller_id() + ' -> ROS already initialized')
 
     def name(self):
         return self.__arm_name
