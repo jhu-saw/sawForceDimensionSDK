@@ -1,0 +1,4 @@
+{
+  "name": "sawForceDimensionSDKAll",
+  "dependencies": ["cisst", "sawKeyboardAll", "sawControllersAll"]
+}
