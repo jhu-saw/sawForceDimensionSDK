@@ -16,7 +16,6 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnUnits.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
@@ -53,10 +52,7 @@ int main(int argc, char * argv[])
                              "replaces the default Qt palette with darker colors");
 
     // check that all required options have been provided
-    std::string errorMessage;
-    if (!options.Parse(argc, argv, errorMessage)) {
-        std::cerr << "Error: " << errorMessage << std::endl;
-        options.PrintUsage(std::cerr);
+    if (!options.Parse(argc, argv, std::cerr)) {
         return -1;
     }
     std::string arguments;
@@ -80,8 +76,6 @@ int main(int argc, char * argv[])
 
     // organize all widgets in a tab widget
     QTabWidget * tabWidget = new QTabWidget;
-
-    // device
     mtsForceDimensionQtWidget * deviceWidget;
 
     // Qt Widget(s)
@@ -115,11 +109,12 @@ int main(int argc, char * argv[])
     tabWidget->show();
     application.exec();
 
+    // stop all logs
+    cmnLogger::Kill();
+
     // kill all components and perform cleanup
     componentManager->KillAllAndWait(5.0 * cmn_s);
     componentManager->Cleanup();
-
-    cmnLogger::Kill();
 
     return 0;
 }

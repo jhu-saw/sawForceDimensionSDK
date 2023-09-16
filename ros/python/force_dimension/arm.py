@@ -58,5 +58,8 @@ class arm(object):
         self.gripper = self.__Gripper(self.__ral.create_child('/gripper'), expected_interval,
                                       operating_state_instance = self)
 
+    def ral(self):
+        return self.__ral
+
     def name(self):
         return self.__arm_name

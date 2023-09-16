@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-11-10
 
-  (C) Copyright 2016-2022 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -58,7 +58,7 @@ int main(int argc, char * argv[])
                               "period in seconds to read all tool positions (default 0.002, 2 ms, 500Hz).  There is no point to have a period higher than the device",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &rosPeriod);
     options.AddOptionOneValue("P", "tf-ros-period",
-                              "period in seconds to read all components and broadcast tf2 (default 0.02, 20 ms, 50Hz).  There is no point to have a period higher than the arm component's period",
+                              "period in seconds to read all components and broadcast tf2 (default 0.02, 20 ms, 50Hz).",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &tfPeriod);
     options.AddOptionMultipleValues("m", "component-manager",
                                     "JSON files to configure component manager",
@@ -67,10 +67,7 @@ int main(int argc, char * argv[])
                              "replaces the default Qt palette with darker colors");
 
     // check that all required options have been provided
-    std::string errorMessage;
-    if (!options.Parse(argc, argv, errorMessage)) {
-        std::cerr << "Error: " << errorMessage << std::endl;
-        options.PrintUsage(std::cerr);
+    if (!options.Parse(argc, argv, std::cerr)) {
         return -1;
     }
     std::string arguments;
@@ -86,8 +83,8 @@ int main(int argc, char * argv[])
     componentManager->AddComponent(forceDimension);
 
     // ROS CRTK bridge
-    mts_ros_crtk_bridge * crtk_bridge
-        = new mts_ros_crtk_bridge("force_dimension_crtk_bridge", &rosNodeHandle);
+    mts_ros_crtk_bridge_provided * crtk_bridge
+        = new mts_ros_crtk_bridge_provided("force_dimension_crtk_bridge", &rosNodeHandle);
     componentManager->AddComponent(crtk_bridge);
 
     // create a Qt user interface
@@ -101,7 +98,7 @@ int main(int argc, char * argv[])
     QTabWidget * tabWidget = new QTabWidget;
     mtsForceDimensionQtWidget * deviceWidget;
 
-    // configure all components
+    // Qt Widget(s)
     typedef std::list<std::string> NamesType;
     NamesType devices;
     forceDimension->GetDeviceNames(devices);
@@ -110,15 +107,14 @@ int main(int argc, char * argv[])
     for (device = devices.begin();
          device != endDevices;
          ++device) {
-        std::string name = *device;
-        deviceWidget = new mtsForceDimensionQtWidget(name + "-gui");
+        deviceWidget = new mtsForceDimensionQtWidget(*device + "-gui");
         deviceWidget->Configure();
         componentManager->AddComponent(deviceWidget);
         componentManager->Connect(deviceWidget->GetName(), "Device",
-                                  forceDimension->GetName(), name);
-        tabWidget->addTab(deviceWidget, name.c_str());
-        crtk_bridge->bridge_interface_provided(forceDimension->GetName(),
-                                               name, rosPeriod, tfPeriod);
+                                  forceDimension->GetName(), *device);
+        tabWidget->addTab(deviceWidget, (*device).c_str());
+        crtk_bridge->bridge_interface_provided(forceDimension->GetName(), *device,
+                                               rosPeriod, tfPeriod);
     }
     crtk_bridge->Connect();
 
@@ -136,14 +132,15 @@ int main(int argc, char * argv[])
     tabWidget->show();
     application.exec();
 
-    // kill all components and perform cleanup
-    componentManager->KillAllAndWait(5.0 * cmn_s);
-    componentManager->Cleanup();
-
+    // stop all logs
     cmnLogger::Kill();
 
     // stop ROS node
     ros::shutdown();
+
+    // kill all components and perform cleanup
+    componentManager->KillAllAndWait(5.0 * cmn_s);
+    componentManager->Cleanup();
 
     return 0;
 }

@@ -39,6 +39,8 @@ class example_application:
 
     # homing example
     def home(self):
+        print('checking connections')
+        self.arm.ral().check_connections()
         print('starting enable')
         if not self.arm.enable(10):
             sys.exit('failed to enable within 10 seconds')
