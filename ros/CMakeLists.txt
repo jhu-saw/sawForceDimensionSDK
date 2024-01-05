@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2017-2021 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2017-2024 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -9,68 +9,104 @@
 #
 # --- end cisst license ---
 
-cmake_minimum_required (VERSION 2.8.3)
+cmake_minimum_required (VERSION 3.10)
+project (force_dimension VERSION 2.1.0)
 
-project (force_dimension_ros)
+# first test for ROS1
+find_package (catkin QUIET
+  COMPONENTS
+  cisst_ros_crtk
+  roscpp
+  roslib)
 
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+# ROS 1
+if (catkin_FOUND)
+  add_definitions (-DROS1)
+  set (ROS_VERSION 1)
+else (catkin_FOUND)
 
-## find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
-find_package (catkin REQUIRED
-              COMPONENTS
-              cisst_ros_crtk
-              roscpp
-              roslib
-              )
+  # look for ROS2
+  find_package (ament_cmake QUIET)
+  if (ament_cmake_FOUND)
+    find_package (ament_cmake_python REQUIRED)
+    add_definitions (-DROS2)
+    set (ROS_VERSION 2)
+    set (REQUIRED_AMENT_PACKAGES
+      rclcpp std_msgs std_srvs geometry_msgs sensor_msgs diagnostic_msgs
+      tf2_ros tf2_msgs cisst_msgs crtk_msgs cisst_ros2_bridge cisst_ros2_crtk)
+    foreach (_pkg ${REQUIRED_AMENT_PACKAGES})
+      find_package (${_pkg} REQUIRED)
+    endforeach ()
+
+  endif (ament_cmake_FOUND)
+endif (catkin_FOUND)
 
 # find cisst and make sure the required libraries have been compiled
 set (REQUIRED_CISST_LIBRARIES
-     cisstCommon
-     cisstCommonQt
-     cisstVector
-     cisstVectorQt
-     cisstOSAbstraction
-     cisstMultiTask
-     cisstMultiTaskQt
-     cisstParameterTypes
-     cisstQt)
+  cisstCommon
+  cisstCommonQt
+  cisstVector
+  cisstVectorQt
+  cisstOSAbstraction
+  cisstMultiTask
+  cisstMultiTaskQt
+  cisstParameterTypes
+  cisstQt)
 
-find_package (cisst 1.1.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.2.1 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 
+  # load cisst configuration
   include (${CISST_USE_FILE})
 
-  # include_directories(include)
-  include_directories (${catkin_INCLUDE_DIRS})
-
-  file (MAKE_DIRECTORY "${CATKIN_DEVEL_PREFIX}/include")
-
-  catkin_package (INCLUDE_DIRS "${CATKIN_DEVEL_PREFIX}/include"
-                  CATKIN_DEPENDS cisst_ros_crtk roscpp roslib)
+  # set paths
+  cisst_set_output_path ()
 
   # sawForceDimensionSDK has been compiled within cisst, we should find it automatically
-  find_package (sawForceDimensionSDK 2.0.0)
+  find_package (sawForceDimensionSDK 2.1.0)
 
   if (sawForceDimensionSDK_FOUND)
 
-    include_directories (${CATKIN_DEVEL_PREFIX}/include
-                         ${sawForceDimensionSDK_INCLUDE_DIR})
+    if (ROS_VERSION EQUAL 1)
+      file (MAKE_DIRECTORY "${CATKIN_DEVEL_PREFIX}/include")
+      catkin_package (INCLUDE_DIRS "${CATKIN_DEVEL_PREFIX}/include"
+        CATKIN_DEPENDS cisst_ros_crtk roscpp roslib)
+      include_directories (${catkin_INCLUDE_DIRS})
+      # for python CRTK client
+      catkin_python_setup ()
+    endif ()
 
+    # sawForceDimensionSDK configuration
+    include_directories (${sawForceDimensionSDK_INCLUDE_DIR} ${force_dimension_SOURCE_DIR})
     link_directories (${sawForceDimensionSDK_LIBRARY_DIR})
 
     add_executable (force_dimension src/force_dimension.cpp)
     target_link_libraries (force_dimension
-                           ${sawForceDimensionSDK_LIBRARIES}
-                           ${catkin_LIBRARIES})
+      ${sawForceDimensionSDK_LIBRARIES}
+      ${catkin_LIBRARIES})
+
+    # link against cisst libraries (and dependencies)
     cisst_target_link_libraries (force_dimension ${REQUIRED_CISST_LIBRARIES})
 
-    # for python CRTK client
-    catkin_python_setup ()
+    install (TARGETS force_dimension
+      LIBRARY DESTINATION lib/${PROJECT_NAME}
+      RUNTIME DESTINATION lib/${PROJECT_NAME}
+      LIBRARY DESTINATION lib
+      INCLUDES DESTINATION include)
+
+    if (ROS_VERSION EQUAL 2)
+      # Python
+      add_subdirectory (python)
+      install (PROGRAMS scripts/xyz-motions.py
+        DESTINATION lib/${PROJECT_NAME})
+      # C++
+      ament_target_dependencies (
+        force_dimension
+        ${REQUIRED_AMENT_PACKAGES}
+        )
+      ament_package ()
+    endif ()
 
   else (sawForceDimensionSDK_FOUND)
     message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires sawForceDimensionSDK")

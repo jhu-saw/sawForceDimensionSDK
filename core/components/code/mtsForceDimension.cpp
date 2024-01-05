@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-11-10
 
-  (C) Copyright 2016-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -70,7 +70,8 @@ protected:
     void move_cp(const prmPositionCartesianSet & newPosition);
     void gripper_servo_jf(const prmForceTorqueJointSet & effortGripper);
     void use_gravity_compensation(const bool & gravityCompensation);
-    void Freeze(void);
+    void hold(void);
+    void free(void);
 
     int m_device_id;
     std::string m_device_id_string;
@@ -124,7 +125,7 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
     } else {
         m_gripper_direction = 1.0;
     }
-    
+
     // get range for joints
     // this needs to be tested on actual device
 #if 0
@@ -134,11 +135,11 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
     std::cerr << "result: " << result << std::endl
               << jMin << std::endl
               << jMax << std::endl;
-    
+
     std::cerr << "has wrist: " << dhdHasWrist(m_device_id) << std::endl;
-    
+
     std::cerr << "has gripper: " << dhdHasGripper(m_device_id) << std::endl;
-    
+
     std::cerr << "has active gripper: " << dhdHasActiveGripper(m_device_id) << std::endl;
 #endif
 
@@ -197,8 +198,10 @@ mtsForceDimensionDevice::mtsForceDimensionDevice(const int deviceId,
                                      this, "move_cp");
         m_interface->AddCommandWrite(&mtsForceDimensionDevice::use_gravity_compensation,
                                      this, "use_gravity_compensation");
-        m_interface->AddCommandVoid(&mtsForceDimensionDevice::Freeze,
-                                    this, "Freeze");
+        m_interface->AddCommandVoid(&mtsForceDimensionDevice::hold,
+                                    this, "hold");
+        m_interface->AddCommandVoid(&mtsForceDimensionDevice::free,
+                                    this, "free");
         // configuration
         m_interface->AddCommandRead(&mtsForceDimensionDevice::GetButtonNames,
                                     this, "get_button_names");
@@ -518,11 +521,17 @@ void mtsForceDimensionDevice::gripper_move_jp(const prmPositionCartesianSet & po
 drdMoveToGrip(m_gripper_servo_jp, false, m_device_id);
 */
 
-void mtsForceDimensionDevice::Freeze(void)
+void mtsForceDimensionDevice::hold(void)
 {
     SetControlMode(mtsForceDimension::SERVO_CP);
     m_servo_cp.Goal().Assign(m_measured_cp.Position());
     dhdGetGripperGap(&m_gripper_servo_jp, m_device_id);
+}
+
+void mtsForceDimensionDevice::free(void)
+{
+    SetControlMode(mtsForceDimension::SERVO_CF);
+    use_gravity_compensation(true);
 }
 
 void mtsForceDimensionDevice::use_gravity_compensation(const bool & gravity)
@@ -640,6 +649,8 @@ void mtsForceDimension::Configure(const std::string & filename)
             hasSerial = false;
             CMN_LOG_CLASS_INIT_WARNING << "Configure: can't retrieve serial number for device "
                                        << i << ", id: " << deviceId << std::endl;
+        } else {
+            CMN_LOG_CLASS_INIT_WARNING << "Configure: found device with serial number: " << serialUShort << std::endl;
         }
         // for some reason, FALCON serial number is always 65535
         if (dhdGetSystemType(deviceId) == DHD_DEVICE_FALCON) {
@@ -675,7 +686,7 @@ void mtsForceDimension::Configure(const std::string & filename)
             buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Top"));
             buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Right"));
         }
-        
+
         // create the device data and add to list of devices
         mtsStateTable * stateTable
             = new mtsStateTable(StateTable.GetHistoryLength(),
