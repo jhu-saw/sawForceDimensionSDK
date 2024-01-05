@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2016-2022 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2016-2024 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -10,7 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required(VERSION 3.10)
-project (sawForceDimensionSDKAll VERSION 2.0.0)
+project (sawForceDimensionSDKCore VERSION 2.1.0)
 
 find_package (cisst REQUIRED)
 include (${CISST_USE_FILE})
@@ -20,8 +20,9 @@ cisst_cpack_settings (
 
 add_subdirectory (components)
 
-set (sawForceDimensionSDK_DIR "${sawForceDimensionSDKAll_BINARY_DIR}/components")
+set (sawForceDimensionSDK_DIR "${sawForceDimensionSDKCore_BINARY_DIR}/components")
 add_subdirectory (examples)
+add_subdirectory (share)
 
 include (CPack)
 cpack_add_component (sawForceDimensionSDK)
@@ -31,3 +32,5 @@ cpack_add_component (sawForceDimensionSDK-Qt
                      DEPENDS sawForceDimensionSDK)
 cpack_add_component (sawForceDimensionSDK-Examples
                      DEPENDS sawForceDimensionSDK sawForceDimensionSDK-Qt)
+cpack_add_component (sawForceDimensionSDK-Share
+                     DEPENDS sawForceDimensionSDK sawForceDimensionSDK-Share)

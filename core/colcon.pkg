@@ -1,0 +1,4 @@
+{
+  "name": "sawForceDimensionSDKCore",
+  "dependencies": ["cisst"]
+}

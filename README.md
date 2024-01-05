@@ -12,8 +12,7 @@ SAW wrapper for Force Dimension haptic devices - the ForceDimension SDK happens 
  * cisst libraries: https://github.com/jhu-cisst/cisst
  * Force Dimension SDK. Downloaded from the manufacturer's web site: http://www.forcedimension.com/download/sdk
  * Qt for user interface
- * ROS (optional)
- * ROS CRTK (optional) 
+ * ROS and ROS CRTK (optional) - works with ROS 1 and ROS 2!
 
 # Compilation and configuration
 
@@ -54,30 +53,54 @@ udevadm control --reload-rules
 
 Once this is done, test the provided examples in the SDK `bin` folder.  You should be able to run them without `sudo`. 
 
-## ROS/Catkin build tools
+# Build
 
-This is by far the simplest solution to compile and run the examples on Linux.
-See how to build cisst with ROS/Catkin tools on the cisst wiki:
-https://github.com/jhu-cisst/cisst/wiki/Compiling-cisst-and-SAW-with-CMake (Make sure you go to the ROS build instructions).
+You can find some documentation re. compiling cisst and SAW components
+for in the dVRK wiki:
+* [ROS 1](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/CatkinBuild)
+* [ROS 2](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/BuildROS2)
 
-To retrieve the code and make sure you have all the repositories you need, you can use the `rosinstall` file in the `ros` directory.  To do so, go in your catkin workspace `src` directory and run:
-```sh
-wstool init
-wstool merge https://raw.githubusercontent.com/jhu-saw/sawForceDimensionSDK/master/ros/force_dimension.rosinstall
-wstool update
-```
+For Linux with ROS, we provide a VCS files to retrieve all the git repositories you need for sawForceDimensionSDK in the `vcs` directory.
 
-When compiling the SAW Force Dimension code, you will need to specify where to find the Force Dimension SDK.  Do a first `catkin build`, this build will skip *sawForceDimensionSDK* because the directory containing the SDK is not known.   To define it, use `ccmake` in a shell/terminal that has all the ROS environment variables defined (DO NOT USE `cmake-gui`, for some reasons, it ignores the environment variables) on the build directory for the SAW Force Dimension component.  For example:
+## ROS 1
+
+When compiling the SAW Force Dimension code, you will need to specify
+where to find the Force Dimension SDK.  Do a first `catkin build`,
+this build will skip *sawForceDimensionSDK* because the directory
+containing the SDK is not known.  To define it, use `ccmake` in a
+shell/terminal that has all the ROS environment variables defined (DO
+NOT USE `cmake-gui`, for some reasons, it ignores the environment
+variables) on the build directory for the SAW Force Dimension
+component.  For example:
+
 ```sh
 adeguet1@lcsr-qla:~/catkin_ws$ ccmake build/saw_force_dimension_sdk
 ```
 In the command above, the ROS workspace is `~/catkin_ws` and the build tree is `build`.
 
-Once in CMake, locate `force_dimension_sdk_DIR` and make it point to the directory containing your SDK.  For example, `~/ForceDimension/sdk-3.6.0`.  Hit configure once and the two variables `force_dimension_sdk_LIBRARY_DHD` and `force_dimension_sdk_LIBRARY_DRD` should have been found automatically.
+Once in CMake, locate `force_dimension_sdk_DIR` and make it point to
+the directory containing your SDK.  For example,
+`~/ForceDimension/sdk-3.6.0`.  Hit `c`onfigure once and the two
+variables `force_dimension_sdk_LIBRARY_DHD` and
+`force_dimension_sdk_LIBRARY_DRD` should have been found
+automatically.
 
-Don't forget to hit "Generate" before quitting CMake.  You should now be able to build using `catkin build --force-cmake`.   The option `--force-cmake` is required to force CMake to run for all packages that depends on the `sawForceDimensionSDK` package.
+Don't forget to hit "Generate" before quitting CMake.  You should now
+be able to build using `catkin build --force-cmake`.  The option
+`--force-cmake` is required to force CMake to run for all packages
+that depends on the `sawForceDimensionSDK` package.
 
-Once the packages are all built, you must first refresh your ROS environment using `source ~/catkin_ws/devel/setup.bash`.
+Once the packages are all built, you must first refresh your ROS
+environment using `source ~/catkin_ws/devel/setup.bash`.
+
+## ROS 2
+
+Please read the ROS 1 section first.  As for ROS 1,
+sawForceDimensionSDK will fail to build until you specify the path
+`force_dimension_sdk_DIR`.  After your first colcon run, use `ccmake
+~/ros2_ws/build/sawForceDimensionSDKCore`.  You will then be able to
+specify the SDK path (see ROS 1 section).  After you `c`onfigure, you
+will need to run colcon with the option `--cmake-force-configure `.
 
 # Examples
 
@@ -116,21 +139,23 @@ The configuration file can be used to rename the devices based on their serial n
 
 ## ROS
 
-If you also want ROS topics corresponding to the tracked tools, try:
+If you also want to use the ROS node for ROS 1, run:
 ```sh
-rosrun force_dimension_ros force_dimension
+rosrun force_dimension force_dimension
 ```
 
-## ROS CRTK Python and Matlab client
+For ROS 2, run:
+```sh
+ros2 run force_dimension force_dimension
+```
 
-Once you have the ATI Force Sensor ROS node working, you can create your own ROS subscriber in different languages, including C++, Python, Matlab...  If you want to use Python or Matlab, the CRTK client libraries might be useful:
-* [CRTK Python](https://github.com/collaborative-robotics/crtk_python_client)
-* [CRTK Matlab](https://github.com/collaborative-robotics/crtk_matlab_client)
+## ROS CRTK Python
 
 A simple ROS client is provided in this package.  Once the ROS `force_dimension` node is started, one can do (in Python):
 ```python
-import force_dimension
-f = force_dimension.arm('Falcon00') # use rostopic list to verify device's name
+import crtk, force_dimension
+ral = crtk.ral('test')
+f = force_dimension.arm(ral, 'Falcon00') # use rostopic list to verify device's name
 # get the current cartesian position
 p = f.measured_cp()
 p
@@ -142,15 +167,22 @@ p
 f.body.servo_cf([5.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 # reset the force to zero
 f.body.servo_cf([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-
 ```
+
+We also provide a simple script to demonstrate motions in x, y and z
+directions.  After you started the ROS node `force_dimension
+force_dimension`, you can run the script/node `force_dimension
+xyz-motions.py` (e.g. for ROS 2 `ros2 run force_dimension
+xyz-motions.py -a /Falcon00`).
 
 ## Other "middleware"
 
-Besides ROS, the ATI Force Sensor component can also stream data to your application using the *sawOpenIGTLink* or *sawSocketStreamer* components.  See:
+Besides ROS, the ForceDimension component can also stream data to your application using the *sawOpenIGTLink* or *sawSocketStreamer* components.  See:
 * [sawOpenIGTLink](https://github.com/jhu-saw/sawOpenIGTLink)
 * [sawSocketStreamer](https://github.com/jhu-saw/sawSocketStreamer)
 
 # Misc
 
-* The current code sometimes fails to properly initialize the Novint Falcon.  To initialize it, you can use the example `encoders` provided in the `bin` directory for the SDK.
+* The current code sometimes fails to properly initialize the Novint
+  Falcon.  To initialize it, you can use the example `encoders`
+  provided in the `bin` directory for the SDK.

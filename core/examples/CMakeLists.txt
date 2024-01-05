@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2017-2023 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2017-2024 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -10,7 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required (VERSION 3.10)
-project (sawForceDimensionSDKExamples VERSION 1.1.0)
+project (sawForceDimensionSDKExamples VERSION 2.1.0)
 
 # create a list of required cisst libraries
 set (REQUIRED_CISST_LIBRARIES cisstCommon

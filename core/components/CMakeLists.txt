@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2016-2023 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2016-2024 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -10,7 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required (VERSION 3.10)
-project (sawForceDimensionSDK VERSION 2.0.0)
+project (sawForceDimensionSDK VERSION 2.1.0)
 
 # create a list of required cisst libraries
 set (REQUIRED_CISST_LIBRARIES cisstCommon
@@ -19,7 +19,7 @@ set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstMultiTask
                               cisstParameterTypes)
 
-find_package (cisst 1.2.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.2.1 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 
@@ -101,8 +101,7 @@ if (cisst_FOUND_AS_REQUIRED)
     install (DIRECTORY
              "${sawForceDimensionSDK_SOURCE_DIR}/include/sawForceDimensionSDK"
              DESTINATION include
-             COMPONENT sawForceDimensionSDK-dev
-             PATTERN .svn EXCLUDE)
+             COMPONENT sawForceDimensionSDK-dev)
 
     install (TARGETS sawForceDimensionSDK COMPONENT sawForceDimensionSDK
              RUNTIME DESTINATION bin

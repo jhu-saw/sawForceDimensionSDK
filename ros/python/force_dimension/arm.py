@@ -1,7 +1,7 @@
 #  Author(s):  Anton Deguet
 #  Created on: 2021-03-04
 
-# (C) Copyright 2021-2023 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2021-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 # --- begin cisst license - do not edit ---
 
@@ -52,6 +52,8 @@ class arm(object):
         self.__crtk_utils.add_measured_cv()
         self.__crtk_utils.add_servo_cp()
         self.__crtk_utils.add_move_cp()
+        self.__crtk_utils.add_free()
+        self.__crtk_utils.add_hold()
 
         # cf in body reference frame
         self.body = self.__MeasuredServoCf(self.__ral.create_child('/body'), expected_interval)

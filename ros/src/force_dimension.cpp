@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-11-10
 
-  (C) Copyright 2016-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -24,12 +24,16 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawForceDimensionSDK/mtsForceDimension.h>
 #include <sawForceDimensionSDK/mtsForceDimensionQtWidget.h>
 
-#include <ros/ros.h>
-#include <cisst_ros_crtk/mts_ros_crtk_bridge.h>
-
 #include <QApplication>
 #include <QMainWindow>
 
+#if ROS1
+#include <cisst_ros_bridge/mtsROSBridge.h>
+#include <cisst_ros_crtk/mts_ros_crtk_bridge.h>
+#elif ROS2
+#include <cisst_ros2_bridge/mtsROSBridge.h>
+#include <cisst_ros2_crtk/mts_ros_crtk_bridge.h>
+#endif
 
 int main(int argc, char * argv[])
 {
@@ -41,8 +45,13 @@ int main(int argc, char * argv[])
     cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
 
     // create ROS node handle
+#if ROS1
     ros::init(argc, argv, "force_dimension", ros::init_options::AnonymousName);
-    ros::NodeHandle rosNodeHandle;
+    ros::NodeHandle rosNode;
+#elif ROS2
+    rclcpp::init(argc, argv);
+    auto rosNode = std::make_shared<rclcpp::Node>("force_dimension");
+#endif
 
     // parse options
     cmnCommandLineOptions options;
@@ -83,8 +92,14 @@ int main(int argc, char * argv[])
     componentManager->AddComponent(forceDimension);
 
     // ROS CRTK bridge
+#if ROS1
     mts_ros_crtk_bridge_provided * crtk_bridge
-        = new mts_ros_crtk_bridge_provided("force_dimension_crtk_bridge", &rosNodeHandle);
+        = new mts_ros_crtk_bridge_provided("force_dimension_crtk_bridge", &rosNode);
+#elif ROS2
+    mts_ros_crtk_bridge * crtk_bridge
+        = new mts_ros_crtk_bridge("force_dimension_crtk_bridge", rosNode);
+#endif
+
     componentManager->AddComponent(crtk_bridge);
 
     // create a Qt user interface
@@ -136,7 +151,11 @@ int main(int argc, char * argv[])
     cmnLogger::Kill();
 
     // stop ROS node
+#if ROS1
     ros::shutdown();
+#elif ROS2
+    rclcpp::shutdown();
+#endif
 
     // kill all components and perform cleanup
     componentManager->KillAllAndWait(5.0 * cmn_s);

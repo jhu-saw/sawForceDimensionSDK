@@ -1,0 +1,33 @@
+repositories:
+  cisst-saw/cisstNetlib:
+    type: git
+    url: https://github.com/jhu-cisst/cisstNetlib.git
+    version: devel
+  cisst-saw/cisst:
+    type: git
+    url: https://github.com/jhu-cisst/cisst.git
+    version: devel
+  cisst-saw/cisst_msgs:
+    type: git
+    url: https://github.com/jhu-cisst/ros2_cisst_msgs.git
+    version: devel
+  cisst-saw/cisst_ros2_bridge:
+    type: git
+    url: https://github.com/jhu-cisst/cisst_ros2_bridge.git
+    version: devel
+  crtk/crtk_msgs:
+    type: git
+    url: https://github.com/collaborative-robotics/ros2_crtk_msgs.git
+    version: devel
+  cisst-saw/cisst_ros2_crtk:
+    type: git
+    url: https://github.com/jhu-cisst/cisst_ros2_crtk.git
+    version: devel
+  cisst-saw/sawForceDimensionSDK:
+    type: git
+    url: https://github.com/jhu-saw/sawForceDimensionSDK.git
+    version: devel
+  crtk/crtk_python_client:
+    type: git
+    url: https://github.com/collaborative-robotics/ros2_crtk_python_client.git
+    version: devel

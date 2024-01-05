@@ -1,26 +1,32 @@
 <?xml version="1.0"?>
-<package>
-  <name>force_dimension_ros</name>
-  <version>2.0.0</version>
+<package format="3">
+  <name>force_dimension</name>
+  <version>2.1.0</version>
   <description>The Force Dimension SDK ROS package</description>
-
   <maintainer email="anton.deguet@jhu.edu">Anton Deguet</maintainer>
+  <author email="anton.deguet@jhu.edu">Anton Deguet</author>
   <license>cisst</license>
   <url>https://github.com/jhu-saw/sawForceDimensionSDK</url>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
 
-  <build_depend>saw_force_dimension_sdk</build_depend>
-  <build_depend>cisst_ros_crtk</build_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>roslib</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">saw_force_dimension_sdk</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">cisst_ros_crtk</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">roscpp</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">roslib</build_depend>
 
-  <run_depend>saw_force_dimension_sdk</run_depend>
-  <run_depend>cisst_ros_crtk</run_depend>
-  <run_depend>roscpp</run_depend>
-  <run_depend>roslib</run_depend>
+  <exec_depend condition="$ROS_VERSION == 1">saw_force_dimension_sdk</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">cisst_ros_crtk</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">roscpp</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">roslib</exec_depend>
 
-  <!-- The export tag contains other, unspecified, tags -->
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake_python</buildtool_depend>
+  <depend condition="$ROS_VERSION == 2">rclcpp</depend>
+  <depend condition="$ROS_VERSION == 2">cisst_ros2_crtk</depend>
+
   <export>
+    <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>
   </export>
+
 </package>
