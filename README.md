@@ -100,7 +100,7 @@ sawForceDimensionSDK will fail to build until you specify the path
 `force_dimension_sdk_DIR`.  After your first colcon run, use `ccmake
 ~/ros2_ws/build/sawForceDimensionSDKCore`.  You will then be able to
 specify the SDK path (see ROS 1 section).  After you `c`onfigure, you
-will need to run colcon with the option `--cmake-force-configure `.
+will need to run colcon with the option `--cmake-force-configure`.
 
 # Examples
 
