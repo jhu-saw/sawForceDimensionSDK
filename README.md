@@ -55,12 +55,7 @@ Once this is done, test the provided examples in the SDK `bin` folder.  You shou
 
 # Build
 
-You can find some documentation re. compiling cisst and SAW components
-for in the dVRK wiki:
-* [ROS 1](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/CatkinBuild)
-* [ROS 2](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/BuildROS2)
-
-For Linux with ROS, we provide a VCS files to retrieve all the git repositories you need for sawForceDimensionSDK in the `vcs` directory.
+See https://github.com/jhu-saw/vcs for download and build instructions.  Use the VCS files for `force-dimension`.
 
 ## ROS 1
 
