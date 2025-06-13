@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-11-10
 
-  (C) Copyright 2016-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -681,10 +681,10 @@ void mtsForceDimension::Configure(const std::string & filename)
         // create list of buttons based on device type
         std::list<mtsInterfaceProvided *> buttonInterfaces;
         if (dhdGetSystemType(deviceId) == DHD_DEVICE_FALCON) {
-            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Center"));
-            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Left"));
-            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Top"));
-            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "-Right"));
+            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "/center"));
+            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "/left"));
+            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "/top"));
+            buttonInterfaces.push_back(this->AddInterfaceProvided(deviceName + "/right"));
         }
 
         // create the device data and add to list of devices

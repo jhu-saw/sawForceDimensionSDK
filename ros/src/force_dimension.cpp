@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-11-10
 
-  (C) Copyright 2016-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -112,9 +112,9 @@ int main(int argc, char * argv[])
         componentManager->Connect(deviceWidget->GetName(), "Device",
                                   forceDimension->GetName(), *device);
         tabWidget->addTab(deviceWidget, (*device).c_str());
-        crtk_bridge->bridge_interface_provided(forceDimension->GetName(), *device,
-                                               rosPeriod, tfPeriod);
     }
+    crtk_bridge->bridge_all_interfaces_provided(forceDimension->GetName(), "",
+                                                rosPeriod, tfPeriod);
     crtk_bridge->Connect();
 
     // custom user components
