@@ -1,4 +1,4 @@
 {
   "name": "force_dimension",
-  "dependencies": ["cisst", "sawForceDimensionSDKCore"]
+  "dependencies": ["cisst_ros_crtk", "sawForceDimensionSDKCore"]
 }

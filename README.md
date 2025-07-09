@@ -55,12 +55,7 @@ Once this is done, test the provided examples in the SDK `bin` folder.  You shou
 
 # Build
 
-You can find some documentation re. compiling cisst and SAW components
-for in the dVRK wiki:
-* [ROS 1](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/CatkinBuild)
-* [ROS 2](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/BuildROS2)
-
-For Linux with ROS, we provide a VCS files to retrieve all the git repositories you need for sawForceDimensionSDK in the `vcs` directory.
+See https://github.com/jhu-saw/vcs for download and build instructions.  Use the VCS files for `force-dimension`.
 
 ## ROS 1
 
@@ -100,7 +95,7 @@ sawForceDimensionSDK will fail to build until you specify the path
 `force_dimension_sdk_DIR`.  After your first colcon run, use `ccmake
 ~/ros2_ws/build/sawForceDimensionSDKCore`.  You will then be able to
 specify the SDK path (see ROS 1 section).  After you `c`onfigure, you
-will need to run colcon with the option `--cmake-force-configure `.
+will need to run colcon with the option `--cmake-force-configure`.
 
 # Examples
 
