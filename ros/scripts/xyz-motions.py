@@ -3,7 +3,7 @@
 # Author: Anton Deguet
 # Date: 2021-03-04
 
-# (C) Copyright 2021-2023 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2021-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 # --- begin cisst license - do not edit ---
 
@@ -52,12 +52,8 @@ class example_application:
     def xyz_motion(self):
         print('starting xyz motion')
         # create a new goal starting with current position
-        initial_cartesian_position = PyKDL.Frame()
-        initial_cartesian_position.p = self.arm.measured_cp().p
-        initial_cartesian_position.M = self.arm.measured_cp().M
-        goal = PyKDL.Frame()
-        goal.p = self.arm.measured_cp().p
-        goal.M = self.arm.measured_cp().M
+        initial_cartesian_position, _ = self.arm.measured_cp()
+        goal, _ = self.arm.measured_cp()
         # motion parameters
         amplitude = 0.02 # 4 cm total
         duration = 3  # 3 seconds
