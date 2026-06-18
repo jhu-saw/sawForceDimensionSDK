@@ -25,17 +25,11 @@ find_package (cisst REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 
 # for Qt generated header files
 include_directories (${CMAKE_CURRENT_BINARY_DIR})
-if (CISST_HAS_QT4)
-  qt4_wrap_cpp (SAW_FORCE_DIMENSION_SDK_QT_WRAP_CPP
-                ${sawForceDimensionSDK_HEADER_DIR}/mtsForceDimensionQtWidget.h)
-else (CISST_HAS_QT4)
-  set (CMAKE_AUTOMOC ON)
-endif (CISST_HAS_QT4)
+set (CMAKE_AUTOMOC ON)
 
 add_library (sawForceDimensionSDKQt
              ${sawForceDimensionSDK_HEADER_DIR}/mtsForceDimensionQtWidget.h
-             mtsForceDimensionQtWidget.cpp
-             ${SAW_FORCE_DIMENSION_SDK_QT_WRAP_CPP})
+             mtsForceDimensionQtWidget.cpp)
 set_target_properties (sawForceDimensionSDKQt PROPERTIES
                        VERSION ${sawForceDimensionSDK_VERSION}
                        FOLDER "sawForceDimensionSDK")
@@ -45,4 +39,3 @@ install (TARGETS sawForceDimensionSDKQt COMPONENT sawForceDimensionSDK-Qt
          RUNTIME DESTINATION bin
          LIBRARY DESTINATION lib
          ARCHIVE DESTINATION lib)
-
