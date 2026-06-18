@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2017-2024 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2017-2026 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -56,53 +56,45 @@ set (REQUIRED_CISST_LIBRARIES
   cisstParameterTypes
   cisstQt)
 
-find_package (cisst 1.4.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.4.0 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 
-if (cisst_FOUND_AS_REQUIRED)
+# set paths
+cisst_set_output_path ()
 
-  # load cisst configuration
-  include (${CISST_USE_FILE})
+# sawForceDimensionSDK has been compiled within cisst, we should find it automatically
+find_package (sawForceDimensionSDK 2.1.0)
 
-  # set paths
-  cisst_set_output_path ()
+if (sawForceDimensionSDK_FOUND)
 
-  # sawForceDimensionSDK has been compiled within cisst, we should find it automatically
-  find_package (sawForceDimensionSDK 2.1.0)
+  # sawForceDimensionSDK configuration
+  include_directories (${sawForceDimensionSDK_INCLUDE_DIR} ${force_dimension_SOURCE_DIR})
+  link_directories (${sawForceDimensionSDK_LIBRARY_DIR})
 
-  if (sawForceDimensionSDK_FOUND)
+  add_executable (force_dimension src/force_dimension.cpp)
+  target_link_libraries (force_dimension
+    ${sawForceDimensionSDK_LIBRARIES}
+    ${catkin_LIBRARIES}
+    ${cisst_LIBRARIES})
 
-    # sawForceDimensionSDK configuration
-    include_directories (${sawForceDimensionSDK_INCLUDE_DIR} ${force_dimension_SOURCE_DIR})
-    link_directories (${sawForceDimensionSDK_LIBRARY_DIR})
+  install (TARGETS force_dimension
+    LIBRARY DESTINATION lib/${PROJECT_NAME}
+    RUNTIME DESTINATION lib/${PROJECT_NAME}
+    LIBRARY DESTINATION lib
+    INCLUDES DESTINATION include)
 
-    add_executable (force_dimension src/force_dimension.cpp)
-    target_link_libraries (force_dimension
-      ${sawForceDimensionSDK_LIBRARIES}
-      ${catkin_LIBRARIES})
+  if (ROS_VERSION EQUAL 2)
+    # Python
+    add_subdirectory (python)
+    install (PROGRAMS scripts/xyz-motions.py
+      DESTINATION lib/${PROJECT_NAME})
+    # C++
+    ament_target_dependencies (
+      force_dimension
+      ${ROS2_depends}
+      )
+    ament_package ()
+  endif ()
 
-    # link against cisst libraries (and dependencies)
-    cisst_target_link_libraries (force_dimension ${REQUIRED_CISST_LIBRARIES})
-
-    install (TARGETS force_dimension
-      LIBRARY DESTINATION lib/${PROJECT_NAME}
-      RUNTIME DESTINATION lib/${PROJECT_NAME}
-      LIBRARY DESTINATION lib
-      INCLUDES DESTINATION include)
-
-    if (ROS_VERSION EQUAL 2)
-      # Python
-      add_subdirectory (python)
-      install (PROGRAMS scripts/xyz-motions.py
-        DESTINATION lib/${PROJECT_NAME})
-      # C++
-      ament_target_dependencies (
-        force_dimension
-        ${ROS2_depends}
-        )
-      ament_package ()
-    endif ()
-
-  else (sawForceDimensionSDK_FOUND)
-    message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires sawForceDimensionSDK")
-  endif (sawForceDimensionSDK_FOUND)
-endif (cisst_FOUND_AS_REQUIRED)
+else (sawForceDimensionSDK_FOUND)
+  message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires sawForceDimensionSDK")
+endif (sawForceDimensionSDK_FOUND)

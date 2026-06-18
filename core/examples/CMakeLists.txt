@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2017-2024 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2017-2026 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -23,47 +23,37 @@ set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstParameterTypes)
 
 # find cisst and make sure the required libraries have been compiled
-find_package (cisst 1.4.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.4.0 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 
-if (cisst_FOUND_AS_REQUIRED)
+# catkin/ROS paths
+cisst_set_output_path ()
 
-  # load cisst configuration
-  include (${CISST_USE_FILE})
+# sawForceDimensionSDK has been compiled within cisst, we should find it automatically
+find_package (sawForceDimensionSDK 2.0.0)
 
-  # catkin/ROS paths
-  cisst_set_output_path ()
+if (sawForceDimensionSDK_FOUND AND CISST_HAS_QT)
 
-  # sawForceDimensionSDK has been compiled within cisst, we should find it automatically
-  find_package (sawForceDimensionSDK 2.0.0)
+  # sawForceDimensionSDK configuration
+  include_directories (${sawForceDimensionSDK_INCLUDE_DIR})
+  link_directories (${sawForceDimensionSDK_LIBRARY_DIR})
 
-  if (sawForceDimensionSDK_FOUND AND CISST_HAS_QT)
+  add_executable (sawForceDimensionSDKQtExample main.cpp)
+  set_target_properties (sawForceDimensionSDKQtExample PROPERTIES
+                         COMPONENTS sawForceDimensionSDK-Examples
+                         FOLDER "sawForceDimensionSDK")
 
-    # sawForceDimensionSDK configuration
-    include_directories (${sawForceDimensionSDK_INCLUDE_DIR})
-    link_directories (${sawForceDimensionSDK_LIBRARY_DIR})
+  # link against non cisst libraries and saw components
+  target_link_libraries (sawForceDimensionSDKQtExample
+                         ${sawForceDimensionSDK_LIBRARIES}
+                         ${sawForceDimensionSDKQt_LIBRARIES}
+                         ${QT_LIBRARIES}
+                         ${cisst_LIBRARIES})
 
-    add_executable (sawForceDimensionSDKQtExample main.cpp)
-    set_target_properties (sawForceDimensionSDKQtExample PROPERTIES
-                           COMPONENTS sawForceDimensionSDK-Examples
-                           FOLDER "sawForceDimensionSDK")
+  install (TARGETS sawForceDimensionSDKQtExample COMPONENT sawForceDimensionSDK-Examples
+           RUNTIME DESTINATION bin
+           LIBRARY DESTINATION lib
+           ARCHIVE DESTINATION lib)
 
-    # link against non cisst libraries and saw components
-    target_link_libraries (sawForceDimensionSDKQtExample
-                           ${sawForceDimensionSDK_LIBRARIES}
-                           ${sawForceDimensionSDKQt_LIBRARIES}
-                           ${QT_LIBRARIES}
-                           )
-
-    # link against cisst libraries (and dependencies)
-    cisst_target_link_libraries (sawForceDimensionSDKQtExample ${REQUIRED_CISST_LIBRARIES})
-
-    install (TARGETS sawForceDimensionSDKQtExample COMPONENT sawForceDimensionSDK-Examples
-             RUNTIME DESTINATION bin
-             LIBRARY DESTINATION lib
-             ARCHIVE DESTINATION lib)
-
-  else (sawForceDimensionSDK_FOUND AND CISST_HAS_QT)
-    message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires sawForceDimensionSDK and cisstQt")
-  endif (sawForceDimensionSDK_FOUND AND CISST_HAS_QT)
-
-endif (cisst_FOUND_AS_REQUIRED)
+else (sawForceDimensionSDK_FOUND AND CISST_HAS_QT)
+  message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires sawForceDimensionSDK and cisstQt")
+endif (sawForceDimensionSDK_FOUND AND CISST_HAS_QT)

@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2014-2022 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2014-2026 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -21,36 +21,28 @@ set (REQUIRED_CISST_LIBRARIES
      cisstQt)
 
 # cisst
-find_package (cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 
-if (cisst_FOUND_AS_REQUIRED)
+# for Qt generated header files
+include_directories (${CMAKE_CURRENT_BINARY_DIR})
+if (CISST_HAS_QT4)
+  qt4_wrap_cpp (SAW_FORCE_DIMENSION_SDK_QT_WRAP_CPP
+                ${sawForceDimensionSDK_HEADER_DIR}/mtsForceDimensionQtWidget.h)
+else (CISST_HAS_QT4)
+  set (CMAKE_AUTOMOC ON)
+endif (CISST_HAS_QT4)
 
-  # cisst
-  include (${CISST_USE_FILE})
+add_library (sawForceDimensionSDKQt
+             ${sawForceDimensionSDK_HEADER_DIR}/mtsForceDimensionQtWidget.h
+             mtsForceDimensionQtWidget.cpp
+             ${SAW_FORCE_DIMENSION_SDK_QT_WRAP_CPP})
+set_target_properties (sawForceDimensionSDKQt PROPERTIES
+                       VERSION ${sawForceDimensionSDK_VERSION}
+                       FOLDER "sawForceDimensionSDK")
+target_link_libraries (sawForceDimensionSDKQt ${cisst_LIBRARIES})
 
-  # for Qt generated header files
-  include_directories (${CMAKE_CURRENT_BINARY_DIR})
-  if (CISST_HAS_QT4)
-    qt4_wrap_cpp (SAW_FORCE_DIMENSION_SDK_QT_WRAP_CPP
-                  ${sawForceDimensionSDK_HEADER_DIR}/mtsForceDimensionQtWidget.h)
-  else (CISST_HAS_QT4)
-    set (CMAKE_AUTOMOC ON)
-  endif (CISST_HAS_QT4)
+install (TARGETS sawForceDimensionSDKQt COMPONENT sawForceDimensionSDK-Qt
+         RUNTIME DESTINATION bin
+         LIBRARY DESTINATION lib
+         ARCHIVE DESTINATION lib)
 
-  add_library (sawForceDimensionSDKQt
-               ${sawForceDimensionSDK_HEADER_DIR}/mtsForceDimensionQtWidget.h
-               mtsForceDimensionQtWidget.cpp
-               ${SAW_FORCE_DIMENSION_SDK_QT_WRAP_CPP})
-  set_target_properties (sawForceDimensionSDKQt PROPERTIES
-                         VERSION ${sawForceDimensionSDK_VERSION}
-                         FOLDER "sawForceDimensionSDK")
-  cisst_target_link_libraries (sawForceDimensionSDKQt ${REQUIRED_CISST_LIBRARIES})
-
-  install (TARGETS sawForceDimensionSDKQt COMPONENT sawForceDimensionSDK-Qt
-           RUNTIME DESTINATION bin
-           LIBRARY DESTINATION lib
-           ARCHIVE DESTINATION lib)
-
-else (cisst_FOUND_AS_REQUIRED)
-  message ("Information: code will not be compiled, it requires ${REQUIRED_CISST_LIBRARIES}")
-endif (cisst_FOUND_AS_REQUIRED)
