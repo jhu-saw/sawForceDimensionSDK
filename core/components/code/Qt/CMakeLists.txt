@@ -18,7 +18,7 @@ set (REQUIRED_CISST_LIBRARIES
      cisstMultiTaskQt
      cisstParameterTypes
      cisstParameterTypesQt
-     cisstQt)
+)
 
 # cisst
 find_package (cisst REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
@@ -33,7 +33,8 @@ add_library (sawForceDimensionSDKQt
 set_target_properties (sawForceDimensionSDKQt PROPERTIES
                        VERSION ${sawForceDimensionSDK_VERSION}
                        FOLDER "sawForceDimensionSDK")
-target_link_libraries (sawForceDimensionSDKQt ${cisst_LIBRARIES})
+target_link_libraries (sawForceDimensionSDKQt
+                       ${cisst_LIBRARIES})
 
 install (TARGETS sawForceDimensionSDKQt COMPONENT sawForceDimensionSDK-Qt
          RUNTIME DESTINATION bin

@@ -54,7 +54,7 @@ set (REQUIRED_CISST_LIBRARIES
   cisstMultiTask
   cisstMultiTaskQt
   cisstParameterTypes
-  cisstQt)
+)
 
 find_package (cisst 1.4.0 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 

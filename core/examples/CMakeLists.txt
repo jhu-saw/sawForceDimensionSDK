@@ -55,5 +55,5 @@ if (sawForceDimensionSDK_FOUND AND CISST_HAS_QT)
            ARCHIVE DESTINATION lib)
 
 else (sawForceDimensionSDK_FOUND AND CISST_HAS_QT)
-  message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires sawForceDimensionSDK and cisstQt")
+  message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires sawForceDimensionSDK Qt support")
 endif (sawForceDimensionSDK_FOUND AND CISST_HAS_QT)
