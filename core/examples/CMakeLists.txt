@@ -23,7 +23,7 @@ set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstParameterTypes)
 
 # find cisst and make sure the required libraries have been compiled
-find_package (cisst 1.4.0 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.5 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 
 # catkin/ROS paths
 cisst_set_output_path ()

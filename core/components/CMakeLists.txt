@@ -19,7 +19,7 @@ set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstMultiTask
                               cisstParameterTypes)
 
-find_package (cisst 1.4.0 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.5 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 
 if (NOT CISST_HAS_JSON)
   message( FATAL_ERROR "sawForceDimensionSDK requires cisst to be built with JSON" )
