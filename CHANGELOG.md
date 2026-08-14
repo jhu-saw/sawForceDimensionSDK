@@ -1,6 +1,15 @@
 Change log
 ==========
 
+2.2.0 (TBD)
+===========
+
+* New features:
+  * Updated the Falcon button bridge and example motion scripts for current CRTK behavior.
+  * Unified ROS 1 and ROS 2 support through the current `cisst_ral` and cisst bridges.
+* Build:
+  * Updated CMake support for the current cisst release and removed Qt4 support.
+
 2.1.0 (2024-01-05)
 ==================
 

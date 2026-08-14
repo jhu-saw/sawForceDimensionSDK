@@ -10,7 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required(VERSION 3.10)
-project (sawForceDimensionSDKCore VERSION 2.1.0)
+project (sawForceDimensionSDKCore VERSION 2.2.0)
 
 find_package (cisst REQUIRED)
 cisst_cpack_settings (

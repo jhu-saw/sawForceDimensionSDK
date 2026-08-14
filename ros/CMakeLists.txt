@@ -10,7 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required (VERSION 3.10)
-project (force_dimension VERSION 2.1.0)
+project (force_dimension VERSION 2.2.0)
 
 # first test for ROS1
 find_package (catkin QUIET
